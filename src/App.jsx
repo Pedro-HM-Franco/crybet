@@ -604,7 +604,6 @@ function Dashboard({ state, setState, onLogout }) {
             onBet={placeFinishBet}
           />
           <WhoBetWhat users={state.users} competitions={state.competitions} />
-          <ChatPanel user={state.user} users={state.users} messages={state.chatMessages} onSend={sendChatMessage} />
         </div>
 
         <aside className="side-stack">
@@ -628,6 +627,7 @@ function Dashboard({ state, setState, onLogout }) {
           </section>
 
           <LiveFeed feed={state.feed.length ? state.feed : ["Sprint editorial esta ao vivo"]} />
+          <ChatPanel user={state.user} users={state.users} messages={state.chatMessages} onSend={sendChatMessage} />
         </aside>
       </div>
     </main>
