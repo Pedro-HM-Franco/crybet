@@ -10,6 +10,7 @@ const baseState = {
   predictions: seedPredictions,
   incidents: seedIncidents,
   feed: seedFeed,
+  chatMessages: [],
   graph: seedGraph,
   probability: 0,
   stability: 100,

@@ -206,6 +206,32 @@ button {
   animation: pulsebar 1.5s ease-in-out infinite;
 }
 
+.chat-window {
+  max-height: 360px;
+  min-height: 220px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    #020202;
+  background-size: 100% 28px;
+  padding: 0.75rem;
+}
+
+.chat-message {
+  margin-bottom: 0.75rem;
+  max-width: min(85%, 520px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.75rem;
+}
+
+.chat-message.mine {
+  margin-left: auto;
+  border-color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.12);
+}
+
 @media (max-width: 640px) {
   .section-title {
     font-size: 1.75rem;

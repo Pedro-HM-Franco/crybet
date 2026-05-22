@@ -17,6 +17,7 @@ import { PredictionBoard } from "./components/PredictionBoard";
 import { PredictionCards } from "./components/PredictionCards";
 import { Triggers } from "./components/Triggers";
 import { WarningPanel } from "./components/WarningPanel";
+import { ChatPanel } from "./components/ChatPanel";
 
 function periodLabel(id) {
   return periods.find((period) => period.id === id)?.label ?? "Desconhecido";
@@ -154,6 +155,27 @@ function Dashboard({ state, setState, onLogout }) {
     });
   }
 
+  function sendChatMessage({ type, toId, text }) {
+    const message = {
+      id: makeId("chat"),
+      type,
+      text,
+      fromId: state.user.id,
+      fromName: state.user.username,
+      toId,
+      createdAt: new Date().toISOString()
+    };
+
+    setState((current) => ({
+      ...current,
+      chatMessages: [...(current.chatMessages ?? []), message].slice(-200),
+      feed:
+        type === "global"
+          ? [`${current.user.username} enviou mensagem no chat geral`, ...current.feed].slice(0, 12)
+          : current.feed
+    }));
+  }
+
   return (
     <main className="min-h-screen bg-black text-white">
       <div className="noise" />
@@ -227,6 +249,12 @@ function Dashboard({ state, setState, onLogout }) {
             <Graph data={state.graph} />
             <p className="mono-label">4. Social Section</p>
             <PredictionBoard users={state.users} predictions={state.predictions} />
+            <ChatPanel
+              user={state.user}
+              users={state.users}
+              messages={state.chatMessages ?? []}
+              onSend={sendChatMessage}
+            />
             <p className="mono-label">5. Incidents + Triggers Section</p>
             <IncidentArchive incidents={state.incidents} onRegister={registerIncident} />
           </div>
