@@ -462,10 +462,14 @@ function Dashboard({ state, setState, onLogout }) {
           ...(current.productivity ?? {}),
           [current.user.id]: {
             ...stats,
-            progress: 100,
-            revisionStatus: "Entregue",
+            currentFile: "",
+            currentTask: "",
+            estimateHours: 1,
+            progress: 0,
+            revisionStatus: "Em producao",
             completedFiles: (stats.completedFiles ?? 0) + 1,
-            finishedAt
+            finishedAt,
+            startedAt: null
           }
         },
         feed: [`${current.user.username} concluiu a demanda atual`, `Janela vencedora: ${winningWindow}`, ...current.feed].slice(0, 20)
