@@ -13,6 +13,7 @@ const baseState = {
   feed: [],
   chatMessages: [],
   competitions: [],
+  finishBets: [],
   productivity: {},
   graph: seedGraph,
   marketHeat: 38,

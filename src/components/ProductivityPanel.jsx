@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export function ProductivityPanel({ user, productivity, onUpdate, onQuickLog }) {
+export function ProductivityPanel({ user, productivity, onUpdate, onQuickLog, onComplete }) {
   const current = productivity[user.id] ?? {
     currentFile: "",
     currentTask: "",
@@ -71,6 +71,7 @@ export function ProductivityPanel({ user, productivity, onUpdate, onQuickLog }) 
         <button type="button" onClick={() => onQuickLog("file")}>+ Arquivo finalizado</button>
         <button type="button" onClick={() => onQuickLog("asset")}>+ Asset entregue</button>
         <button type="button" onClick={() => onQuickLog("water")}>+ 250ml agua</button>
+        <button type="button" className="complete-button" onClick={onComplete}>Concluir demanda agora</button>
       </div>
     </section>
   );

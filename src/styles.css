@@ -544,6 +544,83 @@ input:focus, textarea:focus, select:focus {
   font-weight: 900;
   text-transform: uppercase;
 }
+.complete-button {
+  background: linear-gradient(135deg, var(--orange), var(--red)) !important;
+  color: white !important;
+}
+.demand-betting {
+  border-color: rgba(103, 232, 249, 0.32);
+  box-shadow: 0 24px 70px rgba(0,0,0,.28), inset 3px 0 0 var(--cyan);
+}
+.demand-controls {
+  display: grid;
+  grid-template-columns: 1fr 180px;
+  gap: 12px;
+  margin: 16px 0;
+}
+.demand-controls label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.target-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255,255,255,.045);
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.target-summary > div:last-child {
+  flex: 1;
+}
+.target-summary strong {
+  display: block;
+  font-size: 1.15rem;
+}
+.target-summary p {
+  margin: 4px 0 10px;
+  color: var(--muted);
+}
+.finish-window-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.finish-window-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(103,232,249,.08), rgba(168,85,247,.05));
+  color: var(--text);
+  padding: 15px;
+  text-align: left;
+}
+.finish-window-card span,
+.finish-window-card small {
+  display: block;
+  color: var(--muted);
+  font-size: .74rem;
+  text-transform: uppercase;
+}
+.finish-window-card strong {
+  display: block;
+  margin: 8px 0;
+  font-size: 1.25rem;
+}
+.finish-window-card em {
+  color: var(--green);
+  font-size: 1.35rem;
+  font-style: normal;
+  font-weight: 950;
+}
+.secondary-section {
+  opacity: .92;
+}
 .team-totals {
   display: flex;
   flex-wrap: wrap;
@@ -735,7 +812,7 @@ input:focus, textarea:focus, select:focus {
   .hero-metrics, .creator-card, .options-grid, .weekend-grid, .social-grid, .template-grid {
     grid-template-columns: 1fr;
   }
-  .productivity-form, .progress-grid { grid-template-columns: 1fr; }
+  .productivity-form, .progress-grid, .demand-controls, .finish-window-grid { grid-template-columns: 1fr; }
   .hero-section { padding: 28px 18px; border-radius: 24px; }
   .login-card h1, .hero-section h1 { font-size: 4rem; }
   .nav-stats { width: 100%; }

@@ -5,6 +5,7 @@ import { Graph } from "./components/Graph";
 import { Leaderboard } from "./components/Leaderboard";
 import { LiveFeed } from "./components/LiveFeed";
 import { MetricCard } from "./components/MetricCard";
+import { DemandBetting, classifyFinishWindow } from "./components/DemandBetting";
 import { ProductivityPanel, TeamProgress } from "./components/ProductivityPanel";
 import { categories, challengeTypes, rankFor, starterCompetitions, weekendEvents } from "./data/enfe";
 import { loadCloudState, saveCloudState, subscribeCloudState, toCloudState } from "./lib/cloudState";
@@ -385,10 +386,91 @@ function Dashboard({ state, setState, onLogout }) {
       ...current,
       productivity: {
         ...(current.productivity ?? {}),
-        [current.user.id]: { ...(current.productivity?.[current.user.id] ?? {}), ...draft, updatedAt: new Date().toISOString() }
+        [current.user.id]: {
+          ...(current.productivity?.[current.user.id] ?? {}),
+          ...draft,
+          startedAt:
+            current.productivity?.[current.user.id]?.currentFile === draft.currentFile &&
+            current.productivity?.[current.user.id]?.currentTask === draft.currentTask
+              ? current.productivity?.[current.user.id]?.startedAt ?? new Date().toISOString()
+              : new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
       },
       feed: [`${current.user.username} atualizou: ${draft.currentTask || "producao em andamento"}`, ...current.feed].slice(0, 20)
     }));
+  }
+
+  function placeFinishBet({ targetUserId, windowId, amount, odds }) {
+    setState((current) => {
+      const target = current.users.find((user) => user.id === targetUserId);
+      const already = (current.finishBets ?? []).some(
+        (bet) => bet.bettorId === current.user.id && bet.targetUserId === targetUserId && bet.status === "active"
+      );
+      if (!target || already || current.user.enfecoins < amount) return current;
+      const bet = {
+        id: makeId("finish-bet"),
+        bettorId: current.user.id,
+        bettorName: current.user.username,
+        targetUserId,
+        targetName: target.username,
+        windowId,
+        amount,
+        odds,
+        status: "active",
+        createdAt: new Date().toISOString()
+      };
+      return {
+        ...current,
+        user: { ...current.user, enfecoins: current.user.enfecoins - amount },
+        users: current.users.map((user) => user.id === current.user.id ? { ...user, enfecoins: user.enfecoins - amount } : user),
+        finishBets: [...(current.finishBets ?? []), bet],
+        totalCoinFlow: current.totalCoinFlow + amount,
+        feed: [`${current.user.username} apostou quando ${target.username} termina a demanda`, ...current.feed].slice(0, 20)
+      };
+    });
+  }
+
+  function completeDemand() {
+    setState((current) => {
+      const stats = current.productivity?.[current.user.id] ?? {};
+      const finishedAt = new Date().toISOString();
+      const winningWindow = classifyFinishWindow(stats.startedAt, finishedAt);
+      const finishBets = (current.finishBets ?? []).map((bet) =>
+        bet.targetUserId === current.user.id && bet.status === "active"
+          ? { ...bet, status: "resolved", winningWindow, won: bet.windowId === winningWindow, resolvedAt: finishedAt }
+          : bet
+      );
+      const users = current.users.map((user) => {
+        const wonBets = finishBets.filter((bet) => bet.bettorId === user.id && bet.resolvedAt === finishedAt && bet.won);
+        const reward = wonBets.reduce((sum, bet) => sum + Math.round(bet.amount * bet.odds), 0);
+        if (!reward && user.id !== current.user.id) return user;
+        return {
+          ...user,
+          enfecoins: (user.enfecoins ?? 0) + reward,
+          wins: (user.wins ?? 0) + (reward ? wonBets.length : 0),
+          completedDemands: (user.completedDemands ?? 0) + (user.id === current.user.id ? 1 : 0),
+          totalWon: (user.totalWon ?? 0) + reward
+        };
+      });
+      return {
+        ...current,
+        users,
+        user: users.find((user) => user.id === current.user.id) ?? current.user,
+        finishBets,
+        productivity: {
+          ...(current.productivity ?? {}),
+          [current.user.id]: {
+            ...stats,
+            progress: 100,
+            revisionStatus: "Entregue",
+            completedFiles: (stats.completedFiles ?? 0) + 1,
+            finishedAt
+          }
+        },
+        feed: [`${current.user.username} concluiu a demanda atual`, `Janela vencedora: ${winningWindow}`, ...current.feed].slice(0, 20)
+      };
+    });
   }
 
   function quickLog(type) {
@@ -452,14 +534,22 @@ function Dashboard({ state, setState, onLogout }) {
 
       <div className="dashboard-grid">
         <div className="main-stack">
-          <ProductivityPanel user={state.user} productivity={productivity} onUpdate={updateProductivity} onQuickLog={quickLog} />
+          <ProductivityPanel user={state.user} productivity={productivity} onUpdate={updateProductivity} onQuickLog={quickLog} onComplete={completeDemand} />
           <TeamProgress users={state.users} productivity={productivity} />
+          <DemandBetting
+            user={userProfile}
+            users={state.users}
+            productivity={productivity}
+            finishBets={state.finishBets ?? []}
+            onBet={placeFinishBet}
+          />
 
-          <section className="section-card">
+          <section className="section-card secondary-section">
             <div className="section-head">
               <div>
-                <p className="eyebrow">Desafios criativos ao vivo</p>
-                <h2>Desafios da Equipe</h2>
+                <p className="eyebrow">Opcional</p>
+                <h2>Outros Desafios da Equipe</h2>
+                <p className="helper-copy">Use apenas quando quiser criar uma brincadeira diferente. A aposta principal agora e por demanda atual.</p>
               </div>
               <span>{activeCompetitions.length} ativos</span>
             </div>
