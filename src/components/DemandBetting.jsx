@@ -55,7 +55,9 @@ export function didFinishBetWin(bet, startedAt, finishedAt) {
 }
 
 export function DemandBetting({ user, users, productivity, finishBets, onBet }) {
-  const productiveUsers = users.filter((item) => productivity[item.id]?.currentTask || productivity[item.id]?.currentFile);
+  const productiveUsers = users.filter(
+    (item) => item.id !== user.id && (productivity[item.id]?.currentTask || productivity[item.id]?.currentFile)
+  );
   const [targetId, setTargetId] = useState(productiveUsers[0]?.id ?? "");
   const [amount, setAmount] = useState(5);
   const [customHours, setCustomHours] = useState(1);
@@ -90,7 +92,7 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
       </div>
 
       {!productiveUsers.length ? (
-        <p className="empty-state">Ninguem registrou uma demanda atual ainda. Atualize "Meu Trabalho Agora" primeiro.</p>
+        <p className="empty-state">Nenhuma outra pessoa iniciou uma demanda ainda. Assim que alguem iniciar, os palpites aparecem aqui.</p>
       ) : (
         <>
           <div className="demand-controls">
@@ -119,56 +121,62 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
             </div>
           ) : null}
 
-          <div className="finish-window-grid">
-            {finishWindows.map((item) => (
-              <button
-                className="finish-window-card"
-                type="button"
-                key={item.id}
-                disabled={Boolean(existingBet) || user.enfecoins < amount}
-                onClick={() => onBet({ targetUserId: targetId, windowId: item.id, amount, odds: odds[item.id] })}
-              >
-                <span>{item.helper}</span>
-                <strong>{item.label}</strong>
-                <em>x{odds[item.id]}</em>
-                <small>Retorno {Math.round(amount * odds[item.id])} ENFECOINS</small>
-              </button>
-            ))}
-          </div>
-          <div className="custom-bet-card">
-            <div>
-              <span className="field-title">Palpite personalizado</span>
-              <p>Escolha um tempo exato. Ganha se ficar dentro de 15 minutos do tempo real.</p>
-            </div>
-            <label>
-              Horas
-              <input type="number" min="0" max="24" value={customHours} onChange={(event) => setCustomHours(Number(event.target.value) || 0)} />
-            </label>
-            <label>
-              Minutos
-              <input type="number" min="0" max="59" value={customMinutes} onChange={(event) => setCustomMinutes(Number(event.target.value) || 0)} />
-            </label>
-            <button
-              type="button"
-              disabled={Boolean(existingBet) || user.enfecoins < amount || customTotalMinutes <= 0}
-              onClick={() =>
-                onBet({
-                  targetUserId: targetId,
-                  windowId: customId,
-                  windowLabel: customLabel(customTotalMinutes),
-                  amount,
-                  odds: customOdds
-                })
-              }
-            >
-              Apostar em {customLabel(customTotalMinutes)} / x{customOdds}
-            </button>
-          </div>
           {existingBet ? (
             <div className="locked-bet">
-              Palpite travado: {existingBet.windowLabel || finishWindows.find((item) => item.id === existingBet.windowId)?.label} / {existingBet.amount} ENFECOINS / x{existingBet.odds}
+              <span>Palpite travado</span>
+              <strong>{existingBet.targetName}</strong>
+              <p>{existingBet.windowLabel || finishWindows.find((item) => item.id === existingBet.windowId)?.label}</p>
+              <em>{existingBet.amount} ENFECOINS / x{existingBet.odds}</em>
             </div>
-          ) : null}
+          ) : (
+            <>
+              <div className="finish-window-grid">
+                {finishWindows.map((item) => (
+                  <button
+                    className="finish-window-card"
+                    type="button"
+                    key={item.id}
+                    disabled={user.enfecoins < amount}
+                    onClick={() => onBet({ targetUserId: targetId, windowId: item.id, windowLabel: item.label, amount, odds: odds[item.id] })}
+                  >
+                    <span>{item.helper}</span>
+                    <strong>{item.label}</strong>
+                    <em>x{odds[item.id]}</em>
+                    <small>Clique para travar / retorno {Math.round(amount * odds[item.id])} ENFECOINS</small>
+                  </button>
+                ))}
+              </div>
+              <div className="custom-bet-card">
+                <div>
+                  <span className="field-title">Palpite personalizado</span>
+                  <p>Escolha um tempo exato. Ganha se ficar dentro de 15 minutos do tempo real.</p>
+                </div>
+                <label>
+                  Horas
+                  <input type="number" min="0" max="24" value={customHours} onChange={(event) => setCustomHours(Number(event.target.value) || 0)} />
+                </label>
+                <label>
+                  Minutos
+                  <input type="number" min="0" max="59" value={customMinutes} onChange={(event) => setCustomMinutes(Number(event.target.value) || 0)} />
+                </label>
+                <button
+                  type="button"
+                  disabled={user.enfecoins < amount || customTotalMinutes <= 0}
+                  onClick={() =>
+                    onBet({
+                      targetUserId: targetId,
+                      windowId: customId,
+                      windowLabel: customLabel(customTotalMinutes),
+                      amount,
+                      odds: customOdds
+                    })
+                  }
+                >
+                  Travar {customLabel(customTotalMinutes)} / x{customOdds}
+                </button>
+              </div>
+            </>
+          )}
         </>
       )}
     </section>
