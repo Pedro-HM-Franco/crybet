@@ -5,7 +5,7 @@ import { Leaderboard } from "./components/Leaderboard";
 import { LiveFeed } from "./components/LiveFeed";
 import { MetricCard } from "./components/MetricCard";
 import { DemandBetting, classifyFinishWindow } from "./components/DemandBetting";
-import { ProductivityPanel, TeamProgress } from "./components/ProductivityPanel";
+import { CompletedDemands, ProductivityPanel, TeamProgress } from "./components/ProductivityPanel";
 import { categories, challengeTypes, rankFor } from "./data/enfe";
 import { loadCloudState, saveCloudState, subscribeCloudState, toCloudState } from "./lib/cloudState";
 import { clamp, emptyState, loadState, makeId, resetCrybetStorage, saveState } from "./lib/storage";
@@ -468,7 +468,24 @@ function Dashboard({ state, setState, onLogout }) {
             revisionStatus: "Em producao",
             completedFiles: (stats.completedFiles ?? 0) + 1,
             finishedAt,
-            startedAt: null
+            startedAt: null,
+            completedHistory: [
+              {
+                id: makeId("completed-demand"),
+                file: stats.currentFile,
+                task: stats.currentTask,
+                progress: stats.progress,
+                startedAt: stats.startedAt,
+                finishedAt,
+                finishedAtLabel: new Intl.DateTimeFormat("pt-BR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit"
+                }).format(new Date(finishedAt))
+              },
+              ...(stats.completedHistory ?? [])
+            ].slice(0, 20)
           }
         },
         feed: [`${current.user.username} concluiu a demanda atual`, `Janela vencedora: ${winningWindow}`, ...current.feed].slice(0, 20)
@@ -539,6 +556,7 @@ function Dashboard({ state, setState, onLogout }) {
         <div className="main-stack">
           <Leaderboard users={state.users} />
           <ProductivityPanel user={state.user} productivity={productivity} onUpdate={updateProductivity} onQuickLog={quickLog} onComplete={completeDemand} />
+          <CompletedDemands user={state.user} productivity={productivity} />
           <TeamProgress users={state.users} productivity={productivity} />
           <DemandBetting
             user={userProfile}

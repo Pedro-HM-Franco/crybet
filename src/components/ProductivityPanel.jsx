@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function ProductivityPanel({ user, productivity, onUpdate, onQuickLog, onComplete }) {
   const current = productivity[user.id] ?? {
@@ -14,6 +14,16 @@ export function ProductivityPanel({ user, productivity, onUpdate, onQuickLog, on
   };
 
   const [draft, setDraft] = useState(current);
+
+  useEffect(() => {
+    setDraft(current);
+  }, [
+    current.currentFile,
+    current.currentTask,
+    current.progress,
+    current.estimateHours,
+    current.revisionStatus
+  ]);
 
   function update(field, value) {
     setDraft((state) => ({ ...state, [field]: value }));
@@ -120,6 +130,30 @@ export function TeamProgress({ users, productivity }) {
           );
         })}
       </div>
+    </section>
+  );
+}
+
+export function CompletedDemands({ user, productivity }) {
+  const history = productivity[user.id]?.completedHistory ?? [];
+
+  return (
+    <section className="section-card completed-demands">
+      <p className="eyebrow">Historico pessoal</p>
+      <h2>Demandas Concluidas</h2>
+      {!history.length ? (
+        <p className="empty-state">Nenhuma demanda concluida ainda.</p>
+      ) : (
+        <div className="completed-list">
+          {history.slice(0, 8).map((item) => (
+            <article key={item.id} className="completed-item">
+              <strong>{item.file || "Demanda sem nome"}</strong>
+              <p>{item.task || "Tarefa nao informada"}</p>
+              <span>{item.finishedAtLabel}</span>
+            </article>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
