@@ -5,7 +5,7 @@ export function ProductivityPanel({ user, productivity, onUpdate, onQuickLog }) 
     currentFile: "",
     currentTask: "",
     progress: 0,
-    estimate: "",
+    estimateHours: 1,
     completedTopics: 0,
     completedFiles: 0,
     deliveredAssets: 0,
@@ -32,19 +32,35 @@ export function ProductivityPanel({ user, productivity, onUpdate, onQuickLog }) 
       </div>
 
       <div className="productivity-form">
-        <input value={draft.currentFile} onChange={(e) => update("currentFile", e.target.value)} placeholder="Arquivo atual: Banner, PDF, Apresentacao..." />
-        <input value={draft.currentTask} onChange={(e) => update("currentTask", e.target.value)} placeholder="Tarefa atual: revisao, layout, exportacao..." />
-        <input value={draft.estimate} onChange={(e) => update("estimate", e.target.value)} placeholder="Estimativa: 23:30, +40min..." />
-        <select value={draft.revisionStatus} onChange={(e) => update("revisionStatus", e.target.value)}>
-          <option>Em producao</option>
-          <option>Em revisao</option>
-          <option>Aguardando feedback</option>
-          <option>Pronto para exportar</option>
-          <option>Entregue</option>
-        </select>
+        <label>
+          Arquivo atual
+          <input value={draft.currentFile} onChange={(e) => update("currentFile", e.target.value)} placeholder="Ex: Banner Instagram, PDF final, apresentacao" />
+          <small>Qual material voce esta produzindo agora.</small>
+        </label>
+        <label>
+          Tarefa atual
+          <input value={draft.currentTask} onChange={(e) => update("currentTask", e.target.value)} placeholder="Ex: diagramação, revisao, exportacao, ajustes" />
+          <small>O que voce esta fazendo dentro desse arquivo.</small>
+        </label>
+        <label>
+          Tempo estimado para terminar em horas
+          <input type="number" min="0.25" step="0.25" value={draft.estimateHours} onChange={(e) => update("estimateHours", Number(e.target.value))} />
+          <small>Exemplo: 0.5 = meia hora, 2 = duas horas.</small>
+        </label>
+        <div className="creator-wide">
+          <span className="field-title">Status de revisao</span>
+          <div className="choice-grid">
+            {["Em producao", "Em revisao", "Aguardando feedback", "Pronto para exportar", "Entregue"].map((status) => (
+              <button className={draft.revisionStatus === status ? "choice active" : "choice"} type="button" key={status} onClick={() => update("revisionStatus", status)}>
+                {status}
+              </button>
+            ))}
+          </div>
+        </div>
         <label>
           Progresso do arquivo: {draft.progress}%
           <input type="range" min="0" max="100" value={draft.progress} onChange={(e) => update("progress", Number(e.target.value))} />
+          <small>Atualize conforme o arquivo avança.</small>
         </label>
       </div>
 

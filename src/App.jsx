@@ -73,29 +73,43 @@ function Login({ users, onLogin, onRegister }) {
   );
 }
 
-function CompetitionCreator({ onCreate }) {
+function CompetitionCreator({ users, onCreate }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [participants, setParticipants] = useState("");
   const [category, setCategory] = useState("active");
   const [challengeType, setChallengeType] = useState("productivity");
-  const [timer, setTimer] = useState("");
+  const [selectedParticipants, setSelectedParticipants] = useState([]);
+  const [durationHours, setDurationHours] = useState(2);
   const [reward, setReward] = useState(20);
   const [entryAmount, setEntryAmount] = useState(5);
   const [endTime, setEndTime] = useState("");
-  const [options, setOptions] = useState("Pedro termina primeiro\nMaria termina primeiro\nJoao termina primeiro");
+  const [options, setOptions] = useState("");
+
+  function toggleParticipant(user) {
+    setSelectedParticipants((current) => {
+      const exists = current.some((item) => item.id === user.id);
+      if (exists) return current.filter((item) => item.id !== user.id);
+      return [...current, { id: user.id, username: user.username }];
+    });
+  }
+
+  function fillParticipantOptions() {
+    setOptions(selectedParticipants.map((user) => `${user.username} vence o desafio`).join("\n"));
+  }
 
   function submit(event) {
     event.preventDefault();
     const parsed = options.split("\n").map((item) => item.trim()).filter(Boolean).slice(0, 8);
     if (!title.trim() || parsed.length < 2) return;
+    const participantNames = selectedParticipants.map((user) => user.username);
     onCreate({
       title: title.trim(),
       description: description.trim() || "Desafio criativo da equipe.",
-      participants: participants.trim() || "Equipe editorial",
+      participants: participantNames.length ? participantNames.join(", ") : "Equipe editorial",
+      participantIds: selectedParticipants.map((user) => user.id),
       category,
       challengeType,
-      timer: timer.trim() || "Sprint ativo",
+      timer: `${durationHours || 1}h`,
       reward: Number(reward) || 0,
       entryAmount: Number(entryAmount) || 0,
       endTime: endTime.trim(),
@@ -103,11 +117,12 @@ function CompetitionCreator({ onCreate }) {
     });
     setTitle("");
     setDescription("");
-    setParticipants("");
-    setTimer("");
+    setSelectedParticipants([]);
+    setDurationHours(2);
     setReward(20);
     setEntryAmount(5);
     setEndTime("");
+    setOptions("");
   }
 
   return (
@@ -116,20 +131,83 @@ function CompetitionCreator({ onCreate }) {
         <p className="eyebrow">Criar desafio personalizado</p>
         <h3>Lancar competicao criativa</h3>
       </div>
-      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Quem termina o arquivo primeiro?" />
-      <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Descricao do desafio" />
-      <input value={participants} onChange={(e) => setParticipants(e.target.value)} placeholder="Participantes" />
-      <select value={category} onChange={(e) => setCategory(e.target.value)}>
-        {categories.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-      </select>
-      <select value={challengeType} onChange={(e) => setChallengeType(e.target.value)}>
-        {challengeTypes.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-      </select>
-      <input value={timer} onChange={(e) => setTimer(e.target.value)} placeholder="Timer: hoje 23:59, 45min..." />
-      <input type="number" value={reward} onChange={(e) => setReward(e.target.value)} placeholder="Recompensa" />
-      <input type="number" value={entryAmount} onChange={(e) => setEntryAmount(e.target.value)} placeholder="Entrada" />
-      <input value={endTime} onChange={(e) => setEndTime(e.target.value)} placeholder="Fim: meia-noite, domingo 18h..." />
-      <textarea value={options} onChange={(e) => setOptions(e.target.value)} placeholder="Uma opcao por linha" />
+      <label>
+        Nome do desafio
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Quem termina o arquivo primeiro?" />
+        <small>Use um nome curto e facil de entender.</small>
+      </label>
+      <label>
+        Descricao
+        <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex: vale arquivo exportado e aprovado" />
+        <small>Explique a regra principal do desafio.</small>
+      </label>
+
+      <div className="creator-wide">
+        <span className="field-title">Participantes cadastrados</span>
+        <small>Selecione quem participa. As opcoes podem ser geradas automaticamente com esses nomes.</small>
+        <div className="choice-grid">
+          {!users.length ? <p className="empty-state">Nenhum usuario cadastrado ainda.</p> : null}
+          {users.map((user) => {
+            const active = selectedParticipants.some((item) => item.id === user.id);
+            return (
+              <button className={active ? "choice active" : "choice"} type="button" key={user.id} onClick={() => toggleParticipant(user)}>
+                {user.avatar} {user.username}
+              </button>
+            );
+          })}
+        </div>
+        <button className="ghost-button" type="button" onClick={fillParticipantOptions} disabled={!selectedParticipants.length}>
+          Gerar opcoes com participantes
+        </button>
+      </div>
+
+      <div className="creator-wide">
+        <span className="field-title">Tipo do desafio</span>
+        <div className="choice-grid">
+          {challengeTypes.map((item) => (
+            <button className={challengeType === item.id ? "choice active" : "choice"} type="button" key={item.id} onClick={() => setChallengeType(item.id)}>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="creator-wide">
+        <span className="field-title">Categoria visual</span>
+        <div className="choice-grid">
+          {categories.map((item) => (
+            <button className={category === item.id ? "choice active" : "choice"} type="button" key={item.id} onClick={() => setCategory(item.id)}>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <label>
+        Duracao estimada em horas
+        <input type="number" min="1" max="48" value={durationHours} onChange={(e) => setDurationHours(e.target.value)} />
+        <small>Exemplo: 2 = desafio dura duas horas.</small>
+      </label>
+      <label>
+        Recompensa em ENFECOINS
+        <input type="number" value={reward} onChange={(e) => setReward(e.target.value)} placeholder="20" />
+        <small>Bonus ficticio pago ao vencedor.</small>
+      </label>
+      <label>
+        Entrada sugerida em ENFECOINS
+        <input type="number" value={entryAmount} onChange={(e) => setEntryAmount(e.target.value)} placeholder="5" />
+        <small>Valor sugerido para cada palpite.</small>
+      </label>
+      <label>
+        Horario de encerramento
+        <input value={endTime} onChange={(e) => setEndTime(e.target.value)} placeholder="Ex: hoje 23h, domingo 18h" />
+        <small>Texto livre para todo mundo entender o prazo.</small>
+      </label>
+      <label className="creator-wide">
+        Opcoes de palpite
+        <textarea value={options} onChange={(e) => setOptions(e.target.value)} placeholder="Uma opcao por linha. Ex: Pedro vence o desafio" />
+        <small>Essas sao as opcoes em que as pessoas podem apostar.</small>
+      </label>
       <button type="submit">Criar desafio</button>
     </form>
   );
@@ -403,7 +481,7 @@ function Dashboard({ state, setState, onLogout }) {
               </div>
               <span>{activeCompetitions.length} ativos</span>
             </div>
-            <CompetitionCreator onCreate={createCompetition} />
+            <CompetitionCreator users={state.users} onCreate={createCompetition} />
             {!state.competitions.length ? (
               <div className="template-grid">
                 {starterCompetitions.map((item) => (
