@@ -13,11 +13,12 @@ const baseState = {
   feed: [],
   chatMessages: [],
   competitions: [],
+  productivity: {},
   graph: seedGraph,
   marketHeat: 38,
   volatility: 22,
-  eventStatus: "Arena do fim de semana carregando",
-  topEvent: "Arena de Sexta a Noite",
+  eventStatus: "Sprint criativo carregando",
+  topEvent: "Sprint Editorial de Sexta",
   totalCoinFlow: 0,
   activeTriggerCount: 0
 };

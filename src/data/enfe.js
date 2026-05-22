@@ -15,57 +15,74 @@ export const categories = [
   { id: "finals", label: "Final", color: "red" }
 ];
 
+export const challengeTypes = [
+  { id: "speed", label: "Desafio de Velocidade", color: "blue" },
+  { id: "productivity", label: "Produtividade", color: "green" },
+  { id: "health", label: "Saude e Pausas", color: "cyan" },
+  { id: "creative", label: "Criativo", color: "purple" },
+  { id: "random", label: "Aleatorio Divertido", color: "orange" }
+];
+
 export const weekendEvents = [
   {
     day: "Sexta",
-    title: "Arena de Sexta a Noite",
-    description: "Batalhas noturnas, palpites rapidos e energia caotica de amizade.",
+    title: "Sprint Editorial de Sexta",
+    description: "Arquivos finais, revisoes urgentes e energia criativa de fim de noite.",
     status: "Em espera"
   },
   {
     day: "Sabado",
-    title: "Desafios de Sabado de Manha",
-    description: "Jogos de habilidade, testes de reacao, duelos de meme e aquecimento.",
+    title: "Bloco de Producao de Sabado",
+    description: "Topicos, layouts, banners e assets sendo finalizados em equipe.",
     status: "Aberto"
   },
   {
     day: "Sabado",
-    title: "Torneios de Sabado a Noite",
-    description: "A arena principal para FIFA, basquete e batalhas em equipe.",
+    title: "Noitada Criativa de Sabado",
+    description: "Competicoes de entrega, revisao, exportacao e sobrevivencia editorial.",
     status: "Destaque"
   },
   {
     day: "Domingo",
-    title: "Finais de Domingo",
-    description: "Decisoes finais, rivalidades encerradas e viradas dramaticas de ENFECOINS.",
+    title: "Fechamento de Domingo",
+    description: "Entrega final, PDFs exportados, apresentacoes fechadas e ranking consolidado.",
     status: "Finais"
   }
 ];
 
 export const starterCompetitions = [
   {
-    title: "Final de Basquete",
-    description: "Quem leva a final da quadra?",
+    title: "Quem termina o arquivo primeiro?",
+    description: "Corrida amigavel para ver quem fecha o arquivo atual antes.",
     category: "active",
-    participants: "Time Alpha vs Time Omega",
+    challengeType: "speed",
+    participants: "Equipe editorial",
     timer: "LIVE",
-    options: ["Time Alpha", "Time Omega"]
+    reward: 20,
+    entryAmount: 5,
+    options: ["Pedro termina primeiro", "Maria termina primeiro", "Joao termina primeiro"]
   },
   {
-    title: "Torneio de FIFA",
-    description: "Campeonato relampago do fim de semana.",
+    title: "Mais topicos antes da meia-noite",
+    description: "Quem completa mais topicos validos ate o fim do sprint?",
     category: "tournament",
-    participants: "Chave aberta",
+    challengeType: "productivity",
+    participants: "Todos os produtores",
     timer: "SAT 21:00",
-    options: ["Jogador 1", "Jogador 2", "Azarao"]
+    reward: 35,
+    entryAmount: 8,
+    options: ["Pedro", "Maria", "Joao", "Azarao produtivo"]
   },
   {
-    title: "Concurso de Meme",
-    description: "Quem manda o meme mais absurdo?",
+    title: "Melhor layout entregue hoje",
+    description: "Votacao de zoeira para o layout mais bonito do dia.",
     category: "challenge",
-    participants: "Todos",
+    challengeType: "creative",
+    participants: "Design squad",
     timer: "SUN 16:00",
-    options: ["Pedro", "Maria", "Joao"]
+    reward: 25,
+    entryAmount: 5,
+    options: ["Banner", "Apresentacao", "Editorial", "Logo rapido"]
   }
 ];
 

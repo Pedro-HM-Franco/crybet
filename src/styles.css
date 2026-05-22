@@ -442,6 +442,91 @@ input:focus, textarea:focus, select:focus {
   margin-top: 16px;
 }
 
+.productivity-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.productivity-form label {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.productivity-form input[type="range"] {
+  margin-top: 8px;
+  padding: 0;
+}
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+.quick-actions button,
+.productivity-panel .section-head button {
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--green), var(--cyan));
+  color: #020617;
+  padding: 11px 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.team-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+.team-totals span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255,255,255,.05);
+  color: var(--muted);
+  padding: 8px 10px;
+  font-size: .78rem;
+  font-weight: 800;
+}
+.progress-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.progress-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255,255,255,.045);
+  padding: 14px;
+}
+.progress-card h3 { margin: 0; }
+.progress-card p {
+  margin: 2px 0;
+  color: var(--muted);
+  font-size: .84rem;
+}
+.progress-card small {
+  grid-column: 1 / -1;
+  color: var(--muted);
+}
+.progress-bar {
+  grid-column: 1 / -1;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+}
+.progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--cyan), var(--green));
+}
+
 .graph-canvas {
   position: relative;
   height: 240px;
@@ -576,6 +661,7 @@ input:focus, textarea:focus, select:focus {
   .hero-metrics, .creator-card, .options-grid, .weekend-grid, .social-grid, .template-grid {
     grid-template-columns: 1fr;
   }
+  .productivity-form, .progress-grid { grid-template-columns: 1fr; }
   .hero-section { padding: 28px 18px; border-radius: 24px; }
   .login-card h1, .hero-section h1 { font-size: 4rem; }
   .nav-stats { width: 100%; }
