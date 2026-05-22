@@ -400,6 +400,35 @@ function Dashboard({ state, setState, onLogout }) {
     }));
   }
 
+  function startDemand(draft) {
+    setState((current) => ({
+      ...current,
+      productivity: {
+        ...(current.productivity ?? {}),
+        [current.user.id]: {
+          ...(current.productivity?.[current.user.id] ?? {}),
+          ...draft,
+          progress: Number(draft.progress ?? 0),
+          revisionStatus: draft.revisionStatus || "Em producao",
+          startedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      },
+      feed: [`${current.user.username} iniciou a demanda: ${draft.currentFile}`, ...current.feed].slice(0, 20)
+    }));
+  }
+
+  function formatDuration(startedAt, finishedAt) {
+    const start = startedAt ? new Date(startedAt).getTime() : new Date(finishedAt).getTime();
+    const end = new Date(finishedAt).getTime();
+    const totalMinutes = Math.max(0, Math.round((end - start) / 60000));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours && minutes) return `${hours}h ${minutes}min`;
+    if (hours) return `${hours}h`;
+    return `${minutes}min`;
+  }
+
   function placeFinishBet({ targetUserId, windowId, amount, odds }) {
     setState((current) => {
       const target = current.users.find((user) => user.id === targetUserId);
@@ -435,6 +464,7 @@ function Dashboard({ state, setState, onLogout }) {
       const stats = current.productivity?.[current.user.id] ?? {};
       const finishedAt = new Date().toISOString();
       const winningWindow = classifyFinishWindow(stats.startedAt, finishedAt);
+      const durationLabel = formatDuration(stats.startedAt, finishedAt);
       const finishBets = (current.finishBets ?? []).map((bet) =>
         bet.targetUserId === current.user.id && bet.status === "active"
           ? { ...bet, status: "resolved", winningWindow, won: bet.windowId === winningWindow, resolvedAt: finishedAt }
@@ -482,13 +512,14 @@ function Dashboard({ state, setState, onLogout }) {
                   month: "2-digit",
                   hour: "2-digit",
                   minute: "2-digit"
-                }).format(new Date(finishedAt))
+                }).format(new Date(finishedAt)),
+                durationLabel
               },
               ...(stats.completedHistory ?? [])
             ].slice(0, 20)
           }
         },
-        feed: [`${current.user.username} concluiu a demanda atual`, `Janela vencedora: ${winningWindow}`, ...current.feed].slice(0, 20)
+        feed: [`${current.user.username} finalizou a demanda em ${durationLabel}`, `Janela vencedora: ${winningWindow}`, ...current.feed].slice(0, 20)
       };
     });
   }
@@ -555,7 +586,14 @@ function Dashboard({ state, setState, onLogout }) {
       <div className="dashboard-grid">
         <div className="main-stack">
           <Leaderboard users={state.users} />
-          <ProductivityPanel user={state.user} productivity={productivity} onUpdate={updateProductivity} onQuickLog={quickLog} onComplete={completeDemand} />
+          <ProductivityPanel
+            user={state.user}
+            productivity={productivity}
+            onUpdate={updateProductivity}
+            onStart={startDemand}
+            onQuickLog={quickLog}
+            onComplete={completeDemand}
+          />
           <CompletedDemands user={state.user} productivity={productivity} />
           <TeamProgress users={state.users} productivity={productivity} />
           <DemandBetting

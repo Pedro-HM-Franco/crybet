@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export function ProductivityPanel({ user, productivity, onUpdate, onQuickLog, onComplete }) {
+export function ProductivityPanel({ user, productivity, onUpdate, onStart, onQuickLog, onComplete }) {
   const current = productivity[user.id] ?? {
     currentFile: "",
     currentTask: "",
@@ -14,6 +14,7 @@ export function ProductivityPanel({ user, productivity, onUpdate, onQuickLog, on
   };
 
   const [draft, setDraft] = useState(current);
+  const isStarted = Boolean(current.startedAt);
 
   useEffect(() => {
     setDraft(current);
@@ -38,7 +39,7 @@ export function ProductivityPanel({ user, productivity, onUpdate, onQuickLog, on
           <p className="helper-copy">Atualize o que voce esta fazendo. Isso alimenta ranking, odds e feed ao vivo.</p>
         </div>
         <button type="button" onClick={() => onUpdate(draft)}>
-          Salvar status
+          Salvar alteracoes
         </button>
       </div>
 
@@ -76,12 +77,21 @@ export function ProductivityPanel({ user, productivity, onUpdate, onQuickLog, on
       </div>
 
       <div className="quick-actions">
-        <span className="field-title">Registrar progresso rapido</span>
+        <span className="field-title">Controle da demanda</span>
+        <button type="button" onClick={() => onStart(draft)} disabled={isStarted || !draft.currentFile || !draft.currentTask}>
+          Iniciar demanda
+        </button>
+        <button type="button" className="complete-button" onClick={onComplete} disabled={!isStarted}>
+          Finalizar demanda
+        </button>
+        {isStarted ? <small>Demanda em andamento desde que foi iniciada.</small> : <small>Preencha material e tarefa para iniciar.</small>}
+      </div>
+
+      <div className="quick-actions secondary-actions">
+        <span className="field-title">Registrar extras</span>
         <button type="button" onClick={() => onQuickLog("topic")}>+ Topico concluido</button>
-        <button type="button" onClick={() => onQuickLog("file")}>+ Arquivo finalizado</button>
         <button type="button" onClick={() => onQuickLog("asset")}>+ Asset entregue</button>
         <button type="button" onClick={() => onQuickLog("water")}>+ 250ml agua</button>
-        <button type="button" className="complete-button" onClick={onComplete}>Concluir demanda agora</button>
       </div>
     </section>
   );
@@ -150,6 +160,7 @@ export function CompletedDemands({ user, productivity }) {
               <strong>{item.file || "Demanda sem nome"}</strong>
               <p>{item.task || "Tarefa nao informada"}</p>
               <span>{item.finishedAtLabel}</span>
+              <em>Tempo gasto: {item.durationLabel}</em>
             </article>
           ))}
         </div>
