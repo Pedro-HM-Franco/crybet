@@ -76,13 +76,11 @@ function Login({ users, onLogin, onRegister }) {
 function CompetitionCreator({ users, onCreate }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("active");
   const [challengeType, setChallengeType] = useState("productivity");
   const [selectedParticipants, setSelectedParticipants] = useState([]);
   const [durationHours, setDurationHours] = useState(2);
   const [reward, setReward] = useState(20);
   const [entryAmount, setEntryAmount] = useState(5);
-  const [endTime, setEndTime] = useState("");
   const [options, setOptions] = useState("");
 
   function toggleParticipant(user) {
@@ -107,12 +105,12 @@ function CompetitionCreator({ users, onCreate }) {
       description: description.trim() || "Desafio criativo da equipe.",
       participants: participantNames.length ? participantNames.join(", ") : "Equipe editorial",
       participantIds: selectedParticipants.map((user) => user.id),
-      category,
+      category: challengeType === "creative" ? "tournament" : challengeType === "health" ? "challenge" : "active",
       challengeType,
       timer: `${durationHours || 1}h`,
       reward: Number(reward) || 0,
       entryAmount: Number(entryAmount) || 0,
-      endTime: endTime.trim(),
+      endTime: `termina em ${durationHours || 1}h`,
       options: parsed.map((label, index) => ({ id: `option-${index + 1}`, label }))
     });
     setTitle("");
@@ -121,30 +119,28 @@ function CompetitionCreator({ users, onCreate }) {
     setDurationHours(2);
     setReward(20);
     setEntryAmount(5);
-    setEndTime("");
     setOptions("");
   }
 
   return (
     <form className="creator-card" onSubmit={submit}>
       <div>
-        <p className="eyebrow">Criar desafio personalizado</p>
-        <h3>Lancar competicao criativa</h3>
+        <p className="eyebrow">Criar desafio rapido</p>
+        <h3>Novo desafio da equipe</h3>
+        <p className="helper-copy">Preencha o essencial. O ENFE transforma isso em uma competicao com ENFECOINS ficticios.</p>
       </div>
       <label>
-        Nome do desafio
+        1. Qual e o desafio?
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Quem termina o arquivo primeiro?" />
-        <small>Use um nome curto e facil de entender.</small>
       </label>
       <label>
-        Descricao
+        2. Regra simples
         <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex: vale arquivo exportado e aprovado" />
-        <small>Explique a regra principal do desafio.</small>
       </label>
 
       <div className="creator-wide">
-        <span className="field-title">Participantes cadastrados</span>
-        <small>Selecione quem participa. As opcoes podem ser geradas automaticamente com esses nomes.</small>
+        <span className="field-title">3. Quem participa?</span>
+        <small>Escolha pessoas cadastradas. Depois clique para gerar os palpites automaticamente.</small>
         <div className="choice-grid">
           {!users.length ? <p className="empty-state">Nenhum usuario cadastrado ainda.</p> : null}
           {users.map((user) => {
@@ -162,7 +158,7 @@ function CompetitionCreator({ users, onCreate }) {
       </div>
 
       <div className="creator-wide">
-        <span className="field-title">Tipo do desafio</span>
+        <span className="field-title">4. Tipo do desafio</span>
         <div className="choice-grid">
           {challengeTypes.map((item) => (
             <button className={challengeType === item.id ? "choice active" : "choice"} type="button" key={item.id} onClick={() => setChallengeType(item.id)}>
@@ -172,41 +168,24 @@ function CompetitionCreator({ users, onCreate }) {
         </div>
       </div>
 
-      <div className="creator-wide">
-        <span className="field-title">Categoria visual</span>
-        <div className="choice-grid">
-          {categories.map((item) => (
-            <button className={category === item.id ? "choice active" : "choice"} type="button" key={item.id} onClick={() => setCategory(item.id)}>
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <label>
-        Duracao estimada em horas
+        5. Duracao em horas
         <input type="number" min="1" max="48" value={durationHours} onChange={(e) => setDurationHours(e.target.value)} />
-        <small>Exemplo: 2 = desafio dura duas horas.</small>
       </label>
       <label>
-        Recompensa em ENFECOINS
+        Recompensa
         <input type="number" value={reward} onChange={(e) => setReward(e.target.value)} placeholder="20" />
         <small>Bonus ficticio pago ao vencedor.</small>
       </label>
       <label>
-        Entrada sugerida em ENFECOINS
+        Entrada por palpite
         <input type="number" value={entryAmount} onChange={(e) => setEntryAmount(e.target.value)} placeholder="5" />
-        <small>Valor sugerido para cada palpite.</small>
-      </label>
-      <label>
-        Horario de encerramento
-        <input value={endTime} onChange={(e) => setEndTime(e.target.value)} placeholder="Ex: hoje 23h, domingo 18h" />
-        <small>Texto livre para todo mundo entender o prazo.</small>
+        <small>Valor sugerido em ENFECOINS.</small>
       </label>
       <label className="creator-wide">
-        Opcoes de palpite
+        6. Opcoes de palpite
         <textarea value={options} onChange={(e) => setOptions(e.target.value)} placeholder="Uma opcao por linha. Ex: Pedro vence o desafio" />
-        <small>Essas sao as opcoes em que as pessoas podem apostar.</small>
+        <small>Se escolher participantes, voce pode gerar isso automaticamente.</small>
       </label>
       <button type="submit">Criar desafio</button>
     </form>
@@ -473,11 +452,14 @@ function Dashboard({ state, setState, onLogout }) {
 
       <div className="dashboard-grid">
         <div className="main-stack">
+          <ProductivityPanel user={state.user} productivity={productivity} onUpdate={updateProductivity} onQuickLog={quickLog} />
+          <TeamProgress users={state.users} productivity={productivity} />
+
           <section className="section-card">
             <div className="section-head">
               <div>
                 <p className="eyebrow">Desafios criativos ao vivo</p>
-                <h2>Painel de Producao</h2>
+                <h2>Desafios da Equipe</h2>
               </div>
               <span>{activeCompetitions.length} ativos</span>
             </div>
@@ -513,9 +495,6 @@ function Dashboard({ state, setState, onLogout }) {
               ))}
             </div>
           </section>
-
-          <TeamProgress users={state.users} productivity={productivity} />
-          <ProductivityPanel user={state.user} productivity={productivity} onUpdate={updateProductivity} onQuickLog={quickLog} />
 
           <section className="section-card">
             <p className="eyebrow">Eventos editoriais de fim de semana</p>

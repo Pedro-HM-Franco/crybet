@@ -23,8 +23,9 @@ export function ProductivityPanel({ user, productivity, onUpdate, onQuickLog }) 
     <section className="section-card productivity-panel">
       <div className="section-head">
         <div>
-          <p className="eyebrow">Controle de producao criativa</p>
-          <h2>Meu Progresso Editorial</h2>
+          <p className="eyebrow">Comece por aqui</p>
+          <h2>Meu Trabalho Agora</h2>
+          <p className="helper-copy">Atualize o que voce esta fazendo. Isso alimenta ranking, odds e feed ao vivo.</p>
         </div>
         <button type="button" onClick={() => onUpdate(draft)}>
           Salvar status
@@ -33,17 +34,17 @@ export function ProductivityPanel({ user, productivity, onUpdate, onQuickLog }) 
 
       <div className="productivity-form">
         <label>
-          Arquivo atual
+          Material atual
           <input value={draft.currentFile} onChange={(e) => update("currentFile", e.target.value)} placeholder="Ex: Banner Instagram, PDF final, apresentacao" />
           <small>Qual material voce esta produzindo agora.</small>
         </label>
         <label>
-          Tarefa atual
+          O que estou fazendo
           <input value={draft.currentTask} onChange={(e) => update("currentTask", e.target.value)} placeholder="Ex: diagramação, revisao, exportacao, ajustes" />
           <small>O que voce esta fazendo dentro desse arquivo.</small>
         </label>
         <label>
-          Tempo estimado para terminar em horas
+          Falta quanto tempo? (horas)
           <input type="number" min="0.25" step="0.25" value={draft.estimateHours} onChange={(e) => update("estimateHours", Number(e.target.value))} />
           <small>Exemplo: 0.5 = meia hora, 2 = duas horas.</small>
         </label>
@@ -65,6 +66,7 @@ export function ProductivityPanel({ user, productivity, onUpdate, onQuickLog }) 
       </div>
 
       <div className="quick-actions">
+        <span className="field-title">Registrar progresso rapido</span>
         <button type="button" onClick={() => onQuickLog("topic")}>+ Topico concluido</button>
         <button type="button" onClick={() => onQuickLog("file")}>+ Arquivo finalizado</button>
         <button type="button" onClick={() => onQuickLog("asset")}>+ Asset entregue</button>
