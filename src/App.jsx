@@ -48,10 +48,10 @@ function Login({ users, onLogin, onRegister }) {
       <div className="arena-orb orb-a" />
       <div className="arena-orb orb-b" />
       <motion.section className="login-card" initial={false} animate={{ opacity: 1, y: 0 }}>
-        <p className="eyebrow">Fictional social game / no real money / no payments</p>
+        <p className="eyebrow">Jogo social ficticio / sem dinheiro real / sem pagamentos</p>
         <h1>ENFE 2026</h1>
         <p className="login-copy">
-          The Ultimate Competition Arena. Crie desafios, entre em torneios, use ENFECOINS ficticios e dispute o ranking
+          A Arena Suprema de Competicoes. Crie desafios, entre em torneios, use ENFECOINS ficticios e dispute o ranking
           com seus amigos.
         </p>
         <div className="segmented">
@@ -68,7 +68,7 @@ function Login({ users, onLogin, onRegister }) {
             <input value={avatar} onChange={(e) => setAvatar(e.target.value)} placeholder="Avatar opcional" maxLength={2} />
           ) : null}
           {message ? <p className="form-message">{message}</p> : null}
-          <button type="submit">{mode === "login" ? "Enter ENFE 2026" : "Criar jogador"}</button>
+          <button type="submit">{mode === "login" ? "Entrar no ENFE 2026" : "Criar jogador"}</button>
         </form>
       </motion.section>
     </main>
@@ -85,15 +85,15 @@ function CompetitionCard({ competition, user, onBet, onResolve, onDelete }) {
     <motion.article className={`competition-card ${category.color}`} whileHover={{ y: -4 }}>
       <div className="card-topline">
         <span>{category.label}</span>
-        <strong>{competition.status === "active" ? "LIVE" : "RESOLVED"}</strong>
+        <strong>{competition.status === "active" ? "AO VIVO" : "ENCERRADA"}</strong>
       </div>
       <h3>{competition.title}</h3>
       <p>{competition.description}</p>
       <div className="competition-meta">
         <span>{competition.participants}</span>
         <span>{competition.timer}</span>
-        <span>Pool 🪙 {pool}</span>
-        <span>{competition.bets.length} bets</span>
+        <span>Premio 🪙 {pool}</span>
+        <span>{competition.bets.length} palpites</span>
       </div>
       <div className="options-grid">
         {competition.options.map((option) => {
@@ -105,13 +105,13 @@ function CompetitionCard({ competition, user, onBet, onResolve, onDelete }) {
                 <strong>{option.label}</strong>
                 <span>x{odds}</span>
               </div>
-              <p>{votes} predictions / reward 🪙 {money(amount * odds)}</p>
+              <p>{votes} palpites / retorno 🪙 {money(amount * odds)}</p>
               <button
                 type="button"
                 disabled={Boolean(existingBet) || competition.status !== "active" || user.enfecoins < amount}
                 onClick={() => onBet({ competitionId: competition.id, optionId: option.id, amount, odds })}
               >
-                {existingBet ? "Locked" : "Predict"}
+                {existingBet ? "Travado" : "Palpitar"}
               </button>
             </div>
           );
@@ -125,11 +125,11 @@ function CompetitionCard({ competition, user, onBet, onResolve, onDelete }) {
         <div>
           {competition.options.map((option) => (
             <button key={option.id} type="button" onClick={() => onResolve({ competitionId: competition.id, winningOptionId: option.id })}>
-              Winner: {option.label}
+              Vencedor: {option.label}
             </button>
           ))}
           <button type="button" className="danger" onClick={() => onDelete(competition.id)}>
-            Delete
+            Apagar
           </button>
         </div>
       </div>
@@ -150,7 +150,7 @@ function CompetitionCreator({ onCreate }) {
     if (!title.trim() || parsed.length < 2) return;
     onCreate({
       title: title.trim(),
-      description: description.trim() || "Fictional arena challenge.",
+      description: description.trim() || "Desafio ficticio da arena.",
       participants: participants.trim() || "Open lobby",
       category,
       timer: "LIVE",
@@ -165,19 +165,19 @@ function CompetitionCreator({ onCreate }) {
   return (
     <form className="creator-card" onSubmit={submit}>
       <div>
-        <p className="eyebrow">Create competition</p>
-        <h3>Launch a new arena</h3>
+        <p className="eyebrow">Criar competicao</p>
+        <h3>Lancar nova arena</h3>
       </div>
-      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Competition title" />
-      <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
-      <input value={participants} onChange={(e) => setParticipants(e.target.value)} placeholder="Participants" />
+      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titulo da competicao" />
+      <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Descricao" />
+      <input value={participants} onChange={(e) => setParticipants(e.target.value)} placeholder="Participantes" />
       <select value={category} onChange={(e) => setCategory(e.target.value)}>
         {categories.map((item) => (
           <option key={item.id} value={item.id}>{item.label}</option>
         ))}
       </select>
-      <textarea value={options} onChange={(e) => setOptions(e.target.value)} placeholder="One prediction option per line" />
-      <button type="submit">Create Arena</button>
+      <textarea value={options} onChange={(e) => setOptions(e.target.value)} placeholder="Uma opcao por linha" />
+      <button type="submit">Criar Arena</button>
     </form>
   );
 }
@@ -189,10 +189,10 @@ function WhoBetWhat({ users, competitions }) {
 
   return (
     <section className="section-card">
-      <p className="eyebrow">Realtime social predictions</p>
+      <p className="eyebrow">Palpites sociais em tempo real</p>
       <h2>WHO BET WHAT</h2>
       <div className="social-grid">
-        {!bets.length ? <p className="empty-state">No predictions yet. The arena is waiting.</p> : null}
+        {!bets.length ? <p className="empty-state">Nenhum palpite ainda. A arena esta esperando.</p> : null}
         {bets.slice(-12).reverse().map((bet) => {
           const user = users.find((item) => item.id === bet.userId);
           return (
@@ -200,9 +200,9 @@ function WhoBetWhat({ users, competitions }) {
               <div className="avatar">{user?.avatar ?? bet.username.charAt(0)}</div>
               <div>
                 <h3>{bet.username}</h3>
-                <p>Competition: {bet.competitionTitle}</p>
-                <p>Prediction: {bet.optionLabel}</p>
-                <p>Bet: {bet.amount} ENFECOINS / Odds x{bet.odds}</p>
+                <p>Competicao: {bet.competitionTitle}</p>
+                <p>Palpite: {bet.optionLabel}</p>
+                <p>Aposta: {bet.amount} ENFECOINS / Odds x{bet.odds}</p>
                 <span>{rankFor(user ?? {})}</span>
               </div>
             </article>
@@ -234,7 +234,7 @@ function Dashboard({ state, setState, onLogout }) {
       competitions: [competition, ...current.competitions],
       volatility: clamp(current.volatility + 4),
       graph: [...current.graph.slice(1), clamp(current.volatility + 12)],
-      feed: [`${current.user.username} created ${competition.title}`, ...current.feed].slice(0, 20)
+      feed: [`${current.user.username} criou ${competition.title}`, ...current.feed].slice(0, 20)
     }));
   }
 
@@ -261,7 +261,7 @@ function Dashboard({ state, setState, onLogout }) {
         competitions: current.competitions.map((item) => item.id === competitionId ? { ...item, bets: [...item.bets, bet] } : item),
         volatility: clamp(current.volatility + 2),
         totalCoinFlow: current.totalCoinFlow + amount,
-        feed: [`${current.user.username} placed ${amount} ENFECOINS on ${option?.label}`, ...current.feed].slice(0, 20)
+        feed: [`${current.user.username} colocou ${amount} ENFECOINS em ${option?.label}`, ...current.feed].slice(0, 20)
       };
     });
   }
@@ -293,7 +293,7 @@ function Dashboard({ state, setState, onLogout }) {
         users,
         user: users.find((user) => user.id === current.user.id) ?? current.user,
         competitions: current.competitions.map((item) => item.id === competitionId ? { ...item, status: "resolved", winningOptionId } : item),
-        feed: [`${competition.title} ended. Winner: ${winner?.label}`, ...current.feed].slice(0, 20)
+        feed: [`${competition.title} encerrou. Vencedor: ${winner?.label}`, ...current.feed].slice(0, 20)
       };
     });
   }
@@ -302,7 +302,7 @@ function Dashboard({ state, setState, onLogout }) {
     setState((current) => ({
       ...current,
       competitions: current.competitions.filter((item) => item.id !== id),
-      feed: [`${current.user.username} deleted a competition`, ...current.feed].slice(0, 20)
+      feed: [`${current.user.username} apagou uma competicao`, ...current.feed].slice(0, 20)
     }));
   }
 
@@ -320,21 +320,21 @@ function Dashboard({ state, setState, onLogout }) {
           <span>{rankFor(userProfile)}</span>
           <span>{backendMode}</span>
         </div>
-        <button onClick={onLogout}>Logout</button>
+        <button onClick={onLogout}>Sair</button>
       </nav>
 
       <section className="hero-section">
         <div className="hero-glow" />
-        <p className="eyebrow">Fictional social arena / no real-world financial value</p>
+        <p className="eyebrow">Arena social ficticia / sem valor financeiro real</p>
         <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>ENFE 2026</motion.h1>
-        <p>The Ultimate Competition Arena</p>
+        <p>A Arena Suprema de Competicoes</p>
         <div className="hero-metrics">
-          <MetricCard label="Players Online" value={state.users.filter((user) => user.active).length} detail="live" />
-          <MetricCard label="Active Tournaments" value={state.competitions.filter((item) => item.category === "tournament" && item.status === "active").length} detail="brackets" />
-          <MetricCard label="Live Competitions" value={activeCompetitions.length} detail="arenas" />
-          <MetricCard label="Top Player" value={topPlayer?.username ?? "--"} detail="current" />
-          <MetricCard label="Weekend Event" value={state.eventStatus} detail="status" />
-          <MetricCard label="Coin Circulation" value={`🪙 ${totalCoins}`} detail="fictional" />
+          <MetricCard label="Jogadores Online" value={state.users.filter((user) => user.active).length} detail="ao vivo" />
+          <MetricCard label="Torneios Ativos" value={state.competitions.filter((item) => item.category === "tournament" && item.status === "active").length} detail="chaves" />
+          <MetricCard label="Competicoes Ao Vivo" value={activeCompetitions.length} detail="arenas" />
+          <MetricCard label="Top Player" value={topPlayer?.username ?? "--"} detail="atual" />
+          <MetricCard label="Evento do Fim de Semana" value={state.eventStatus} detail="status" />
+          <MetricCard label="ENFECOINS em Circulacao" value={`🪙 ${totalCoins}`} detail="ficticio" />
         </div>
       </section>
 
@@ -343,10 +343,10 @@ function Dashboard({ state, setState, onLogout }) {
           <section className="section-card">
             <div className="section-head">
               <div>
-                <p className="eyebrow">Live competitions</p>
-                <h2>Arena Board</h2>
+                <p className="eyebrow">Competicoes ao vivo</p>
+                <h2>Painel da Arena</h2>
               </div>
-              <span>{activeCompetitions.length} active</span>
+              <span>{activeCompetitions.length} ativas</span>
             </div>
             <CompetitionCreator onCreate={createCompetition} />
             {!state.competitions.length ? (
@@ -385,8 +385,8 @@ function Dashboard({ state, setState, onLogout }) {
           </section>
 
           <section className="section-card">
-            <p className="eyebrow">Weekend events</p>
-            <h2>Weekend Arena</h2>
+            <p className="eyebrow">Eventos de fim de semana</p>
+            <h2>Arena do Fim de Semana</h2>
             <div className="weekend-grid">
               {weekendEvents.map((event) => (
                 <article key={`${event.day}-${event.title}`} className="event-card">
@@ -405,7 +405,7 @@ function Dashboard({ state, setState, onLogout }) {
 
         <aside className="side-stack">
           <section className="section-card player-profile">
-            <p className="eyebrow">Player profile</p>
+            <p className="eyebrow">Perfil do jogador</p>
             <div className="profile-row">
               <div className="avatar large">{userProfile.avatar}</div>
               <div>
@@ -414,27 +414,27 @@ function Dashboard({ state, setState, onLogout }) {
               </div>
             </div>
             <div className="profile-stats">
-              <span>Coins 🪙 {money(userProfile.enfecoins)}</span>
-              <span>Wins {userProfile.wins ?? 0}</span>
-              <span>Losses {userProfile.losses ?? 0}</span>
+              <span>Moedas 🪙 {money(userProfile.enfecoins)}</span>
+              <span>Vitorias {userProfile.wins ?? 0}</span>
+              <span>Derrotas {userProfile.losses ?? 0}</span>
               <span>Winstreak {userProfile.winstreak ?? 0}</span>
-              <span>Best odds x{userProfile.bestOddsWon ?? 0}</span>
-              <span>Favorite {userProfile.favoriteCompetition ?? "Open Arena"}</span>
+              <span>Melhor odd x{userProfile.bestOddsWon ?? 0}</span>
+              <span>Favorito {userProfile.favoriteCompetition ?? "Arena Aberta"}</span>
             </div>
           </section>
 
           <section className="section-card">
-            <p className="eyebrow">Live market dashboard</p>
-            <h2>Market Pulse</h2>
+            <p className="eyebrow">Painel de mercado ao vivo</p>
+            <h2>Pulso do Mercado</h2>
             <Graph data={state.graph} />
             <div className="market-stats">
-              <span>Volatility {state.volatility}%</span>
-              <span>Coin flow 🪙 {state.totalCoinFlow}</span>
-              <span>Trending {state.topEvent}</span>
+              <span>Volatilidade {state.volatility}%</span>
+              <span>Fluxo de moedas 🪙 {state.totalCoinFlow}</span>
+              <span>Em alta {state.topEvent}</span>
             </div>
           </section>
 
-          <LiveFeed feed={state.feed.length ? state.feed : ["Weekend Arena event is now live"]} />
+          <LiveFeed feed={state.feed.length ? state.feed : ["Arena do fim de semana esta ao vivo"]} />
           <Leaderboard users={state.users} />
         </aside>
       </div>
@@ -512,8 +512,8 @@ export default function App() {
       totalLost: 0,
       bestOddsWon: 0,
       winstreak: 0,
-      favoriteCompetition: "Open Arena"
-    }, "joined ENFE 2026");
+      favoriteCompetition: "Arena Aberta"
+    }, "entrou no ENFE 2026");
   }
 
   function logout() {
@@ -524,6 +524,6 @@ export default function App() {
     }));
   }
 
-  if (!state.user) return <Login users={state.users} onLogin={(user) => activateUser(user, "entered the arena")} onRegister={register} />;
+  if (!state.user) return <Login users={state.users} onLogin={(user) => activateUser(user, "entrou na arena")} onRegister={register} />;
   return <Dashboard state={state} setState={setState} onLogout={logout} />;
 }

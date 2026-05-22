@@ -5,8 +5,8 @@ export function LiveFeed({ feed }) {
     <section className="section-card">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <p className="eyebrow">Realtime social feed</p>
-          <h2>Live Social Feed</h2>
+          <p className="eyebrow">Feed social em tempo real</p>
+          <h2>Feed Ao Vivo</h2>
         </div>
         <span className="live-badge">LIVE</span>
       </div>

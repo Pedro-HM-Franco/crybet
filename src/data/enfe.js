@@ -1,69 +1,69 @@
 export const ranks = [
-  "Rookie",
-  "Challenger",
-  "Elite Player",
-  "Arena Master",
-  "Nexus Champion",
-  "ENFE Legend"
+  "Novato",
+  "Desafiante",
+  "Jogador Elite",
+  "Mestre da Arena",
+  "Campeao Nexus",
+  "Lenda ENFE"
 ];
 
 export const categories = [
-  { id: "active", label: "Active", color: "blue" },
-  { id: "tournament", label: "Tournament", color: "purple" },
-  { id: "challenge", label: "Challenge", color: "green" },
-  { id: "volatile", label: "High Volatility", color: "orange" },
-  { id: "finals", label: "Finals", color: "red" }
+  { id: "active", label: "Ativa", color: "blue" },
+  { id: "tournament", label: "Torneio", color: "purple" },
+  { id: "challenge", label: "Desafio", color: "green" },
+  { id: "volatile", label: "Alta Volatilidade", color: "orange" },
+  { id: "finals", label: "Final", color: "red" }
 ];
 
 export const weekendEvents = [
   {
-    day: "Friday",
-    title: "Friday Night Arena",
-    description: "Late-night battles, fast bets, and chaotic friendship energy.",
-    status: "Standby"
+    day: "Sexta",
+    title: "Arena de Sexta a Noite",
+    description: "Batalhas noturnas, palpites rapidos e energia caotica de amizade.",
+    status: "Em espera"
   },
   {
-    day: "Saturday",
-    title: "Saturday Morning Challenges",
-    description: "Skill games, reaction tests, meme duels, and warm-up events.",
-    status: "Open"
+    day: "Sabado",
+    title: "Desafios de Sabado de Manha",
+    description: "Jogos de habilidade, testes de reacao, duelos de meme e aquecimento.",
+    status: "Aberto"
   },
   {
-    day: "Saturday",
-    title: "Saturday Night Tournaments",
-    description: "The prime-time arena for FIFA, basketball, and team battles.",
-    status: "Featured"
+    day: "Sabado",
+    title: "Torneios de Sabado a Noite",
+    description: "A arena principal para FIFA, basquete e batalhas em equipe.",
+    status: "Destaque"
   },
   {
-    day: "Sunday",
-    title: "Sunday Finals",
-    description: "Final calls, rivalry closures, and dramatic ENFECOIN swings.",
-    status: "Finals"
+    day: "Domingo",
+    title: "Finais de Domingo",
+    description: "Decisoes finais, rivalidades encerradas e viradas dramaticas de ENFECOINS.",
+    status: "Finais"
   }
 ];
 
 export const starterCompetitions = [
   {
-    title: "Basketball Finals",
+    title: "Final de Basquete",
     description: "Quem leva a final da quadra?",
     category: "active",
-    participants: "Team Alpha vs Team Omega",
+    participants: "Time Alpha vs Time Omega",
     timer: "LIVE",
-    options: ["Team Alpha", "Team Omega"]
+    options: ["Time Alpha", "Time Omega"]
   },
   {
-    title: "FIFA Tournament",
+    title: "Torneio de FIFA",
     description: "Campeonato relampago do fim de semana.",
     category: "tournament",
-    participants: "Open bracket",
+    participants: "Chave aberta",
     timer: "SAT 21:00",
-    options: ["Player 1", "Player 2", "Dark Horse"]
+    options: ["Jogador 1", "Jogador 2", "Azarao"]
   },
   {
-    title: "Meme Contest",
+    title: "Concurso de Meme",
     description: "Quem manda o meme mais absurdo?",
     category: "challenge",
-    participants: "Everyone",
+    participants: "Todos",
     timer: "SUN 16:00",
     options: ["Pedro", "Maria", "Joao"]
   }
@@ -72,10 +72,10 @@ export const starterCompetitions = [
 export function rankFor(user) {
   const wins = user.wins ?? user.correct ?? 0;
   const coins = user.enfecoins ?? user.crycoins ?? 0;
-  if (coins >= 500 || wins >= 12) return "ENFE Legend";
-  if (coins >= 300 || wins >= 8) return "Nexus Champion";
-  if (coins >= 200 || wins >= 5) return "Arena Master";
-  if (coins >= 120 || wins >= 3) return "Elite Player";
-  if (wins >= 1) return "Challenger";
-  return "Rookie";
+  if (coins >= 500 || wins >= 12) return "Lenda ENFE";
+  if (coins >= 300 || wins >= 8) return "Campeao Nexus";
+  if (coins >= 200 || wins >= 5) return "Mestre da Arena";
+  if (coins >= 120 || wins >= 3) return "Jogador Elite";
+  if (wins >= 1) return "Desafiante";
+  return "Novato";
 }

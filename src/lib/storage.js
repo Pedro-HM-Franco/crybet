@@ -16,8 +16,8 @@ const baseState = {
   graph: seedGraph,
   marketHeat: 38,
   volatility: 22,
-  eventStatus: "Weekend Arena loading",
-  topEvent: "Friday Night Arena",
+  eventStatus: "Arena do fim de semana carregando",
+  topEvent: "Arena de Sexta a Noite",
   totalCoinFlow: 0,
   activeTriggerCount: 0
 };

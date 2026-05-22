@@ -471,7 +471,63 @@ input:focus, textarea:focus, select:focus {
 .feed-row p { margin: 0; color: var(--muted); }
 
 .leaderboards { margin-top: 16px; }
+.leaderboard-spotlight {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(103, 232, 249, 0.34);
+  background:
+    radial-gradient(circle at 16% 0%, rgba(103, 232, 249, 0.18), transparent 20rem),
+    radial-gradient(circle at 100% 16%, rgba(168, 85, 247, 0.18), transparent 18rem),
+    linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)),
+    var(--panel-strong);
+  box-shadow: 0 26px 80px rgba(0, 0, 0, 0.38), 0 0 34px rgba(103, 232, 249, 0.08);
+}
+.leaderboard-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 20%, rgba(103,232,249,.08), transparent 46%);
+}
+.ranking-hero {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.ranking-hero h2 {
+  margin: 0;
+  font-size: clamp(2.1rem, 5vw, 3.8rem);
+  color: white;
+  text-shadow: 0 0 30px rgba(103, 232, 249, 0.22);
+}
+.ranking-hero span {
+  width: fit-content;
+  border: 1px solid rgba(74, 222, 128, 0.34);
+  border-radius: 999px;
+  background: rgba(74, 222, 128, 0.1);
+  color: var(--green);
+  padding: 7px 10px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
 .leaderboard-panel h3 { margin: 0 0 12px; }
+.leaderboard-panel {
+  background: rgba(2, 6, 23, 0.28);
+}
+.leaderboard-panel:first-child {
+  border-color: rgba(103, 232, 249, 0.36);
+  box-shadow: inset 3px 0 0 var(--cyan);
+}
+.leaderboard-panel:nth-child(2) {
+  box-shadow: inset 3px 0 0 var(--purple);
+}
+.leaderboard-panel:nth-child(3) {
+  box-shadow: inset 3px 0 0 var(--green);
+}
 .leader-row span:first-child {
   color: var(--cyan);
   font-weight: 950;

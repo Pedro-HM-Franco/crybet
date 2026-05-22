@@ -11,8 +11,8 @@ export function Graph({ data }) {
     <section className="market-graph">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <p className="eyebrow">Realtime odds movement</p>
-          <h2>ENFE Market Index</h2>
+          <p className="eyebrow">Movimento de odds em tempo real</p>
+          <h2>Indice de Mercado ENFE</h2>
         </div>
         <span className="live-badge">LIVE</span>
       </div>
@@ -44,7 +44,7 @@ export function Graph({ data }) {
           />
         ))}
         <div className="absolute left-4 top-4 font-mono text-xs uppercase text-white/70">
-          MARKET AI: VOLATILE BUT FUN
+          IA DE MERCADO: VOLATIL MAS DIVERTIDA
         </div>
       </div>
     </section>
