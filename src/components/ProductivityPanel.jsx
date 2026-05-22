@@ -38,9 +38,6 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onQui
           <h2>Meu Trabalho Agora</h2>
           <p className="helper-copy">Atualize o que voce esta fazendo. Isso alimenta ranking, odds e feed ao vivo.</p>
         </div>
-        <button type="button" onClick={() => onUpdate(draft)}>
-          Salvar alteracoes
-        </button>
       </div>
 
       <div className="productivity-form">
@@ -69,11 +66,6 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onQui
             ))}
           </div>
         </div>
-        <label>
-          Progresso do arquivo: {draft.progress}%
-          <input type="range" min="0" max="100" value={draft.progress} onChange={(e) => update("progress", Number(e.target.value))} />
-          <small>Atualize conforme o arquivo avança.</small>
-        </label>
       </div>
 
       <div className="quick-actions">
