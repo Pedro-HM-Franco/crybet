@@ -2,13 +2,13 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export function LiveFeed({ feed }) {
   return (
-    <section className="panel p-4 md:p-5">
+    <section className="section-card">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <p className="mono-label">Sistema de alerta ao vivo</p>
-          <h2 className="section-title">Feed de Atividade</h2>
+          <p className="eyebrow">Realtime social feed</p>
+          <h2>Live Social Feed</h2>
         </div>
-        <span className="blink font-mono text-xs uppercase">Monitorando</span>
+        <span className="live-badge">LIVE</span>
       </div>
       <div className="space-y-2">
         <AnimatePresence initial={false}>

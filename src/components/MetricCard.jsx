@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 export function MetricCard({ label, value, detail, intense = false }) {
   return (
     <motion.article
-      className={`panel relative overflow-hidden p-4 ${intense ? "shadow-glow" : ""}`}
+      className={`metric-card ${intense ? "hot" : ""}`}
       initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}

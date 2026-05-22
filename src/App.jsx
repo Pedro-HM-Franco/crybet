@@ -1,394 +1,442 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { analystTitles, periods } from "./data/periods";
-import { backendMode } from "./lib/supabaseClient";
-import { clamp, emptyState, loadState, makeId, nowLabel, resetCrybetStorage, saveState } from "./lib/storage";
-import { calculateOdds, settlePredictions } from "./lib/market";
-import { loadCloudState, saveCloudState, subscribeCloudState, toCloudState } from "./lib/cloudState";
-import { supabase } from "./lib/supabaseClient";
+import { ChatPanel } from "./components/ChatPanel";
 import { Graph } from "./components/Graph";
-import { IncidentArchive } from "./components/IncidentArchive";
 import { Leaderboard } from "./components/Leaderboard";
 import { LiveFeed } from "./components/LiveFeed";
-import { MarketAnalysis } from "./components/MarketAnalysis";
-import { Login } from "./components/Login";
 import { MetricCard } from "./components/MetricCard";
-import { PredictionBoard } from "./components/PredictionBoard";
-import { PredictionCards } from "./components/PredictionCards";
-import { Triggers } from "./components/Triggers";
-import { WarningPanel } from "./components/WarningPanel";
-import { ChatPanel } from "./components/ChatPanel";
-import { Competitions } from "./components/Competitions";
+import { categories, rankFor, ranks, starterCompetitions, weekendEvents } from "./data/enfe";
+import { loadCloudState, saveCloudState, subscribeCloudState, toCloudState } from "./lib/cloudState";
+import { clamp, emptyState, loadState, makeId, resetCrybetStorage, saveState } from "./lib/storage";
+import { supabase, backendMode } from "./lib/supabaseClient";
 
-function periodLabel(id) {
-  return periods.find((period) => period.id === id)?.label ?? "Desconhecido";
+function calcOdds(competition, optionId) {
+  const total = Math.max(competition.bets.length, 1);
+  const optionBets = competition.bets.filter((bet) => bet.optionId === optionId).length;
+  const popularityPenalty = optionBets / total;
+  const lonelyBonus = optionBets === 0 ? 1.25 : 0;
+  const activity = Math.min(1.4, competition.bets.length * 0.12);
+  return Number(Math.max(1.2, Math.min(6.8, 2.4 + lonelyBonus + activity - popularityPenalty * 3)).toFixed(1));
+}
+
+function money(value) {
+  return Math.round(value ?? 0);
+}
+
+function Login({ users, onLogin, onRegister }) {
+  const [mode, setMode] = useState("login");
+  const [username, setUsername] = useState("");
+  const [avatar, setAvatar] = useState("");
+  const [message, setMessage] = useState("");
+
+  function submit(event) {
+    event.preventDefault();
+    const clean = username.trim();
+    if (!clean) return setMessage("Digite um nome de jogador.");
+    const existing = users.find((user) => user.username.toLowerCase() === clean.toLowerCase());
+    if (mode === "login") {
+      if (!existing) return setMessage("Jogador nao encontrado. Cadastre primeiro.");
+      onLogin(existing);
+      return;
+    }
+    if (existing) return setMessage("Esse jogador ja existe. Use Entrar.");
+    onRegister({ username: clean, avatar: (avatar.trim() || clean.charAt(0)).slice(0, 2).toUpperCase() });
+  }
+
+  return (
+    <main className="login-shell">
+      <div className="arena-orb orb-a" />
+      <div className="arena-orb orb-b" />
+      <motion.section className="login-card" initial={false} animate={{ opacity: 1, y: 0 }}>
+        <p className="eyebrow">Fictional social game / no real money / no payments</p>
+        <h1>ENFE 2026</h1>
+        <p className="login-copy">
+          The Ultimate Competition Arena. Crie desafios, entre em torneios, use ENFECOINS ficticios e dispute o ranking
+          com seus amigos.
+        </p>
+        <div className="segmented">
+          <button className={mode === "login" ? "active" : ""} type="button" onClick={() => setMode("login")}>
+            Entrar
+          </button>
+          <button className={mode === "register" ? "active" : ""} type="button" onClick={() => setMode("register")}>
+            Cadastrar
+          </button>
+        </div>
+        <form className="login-form" onSubmit={submit}>
+          <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Nome do jogador" maxLength={18} />
+          {mode === "register" ? (
+            <input value={avatar} onChange={(e) => setAvatar(e.target.value)} placeholder="Avatar opcional" maxLength={2} />
+          ) : null}
+          {message ? <p className="form-message">{message}</p> : null}
+          <button type="submit">{mode === "login" ? "Enter ENFE 2026" : "Criar jogador"}</button>
+        </form>
+      </motion.section>
+    </main>
+  );
+}
+
+function CompetitionCard({ competition, user, onBet, onResolve, onDelete }) {
+  const [amount, setAmount] = useState(10);
+  const existingBet = competition.bets.find((bet) => bet.userId === user.id);
+  const pool = competition.bets.reduce((sum, bet) => sum + bet.amount, 0);
+  const category = categories.find((item) => item.id === competition.category) ?? categories[0];
+
+  return (
+    <motion.article className={`competition-card ${category.color}`} whileHover={{ y: -4 }}>
+      <div className="card-topline">
+        <span>{category.label}</span>
+        <strong>{competition.status === "active" ? "LIVE" : "RESOLVED"}</strong>
+      </div>
+      <h3>{competition.title}</h3>
+      <p>{competition.description}</p>
+      <div className="competition-meta">
+        <span>{competition.participants}</span>
+        <span>{competition.timer}</span>
+        <span>Pool 🪙 {pool}</span>
+        <span>{competition.bets.length} bets</span>
+      </div>
+      <div className="options-grid">
+        {competition.options.map((option) => {
+          const odds = calcOdds(competition, option.id);
+          const votes = competition.bets.filter((bet) => bet.optionId === option.id).length;
+          return (
+            <div className="option-card" key={option.id}>
+              <div className="option-head">
+                <strong>{option.label}</strong>
+                <span>x{odds}</span>
+              </div>
+              <p>{votes} predictions / reward 🪙 {money(amount * odds)}</p>
+              <button
+                type="button"
+                disabled={Boolean(existingBet) || competition.status !== "active" || user.enfecoins < amount}
+                onClick={() => onBet({ competitionId: competition.id, optionId: option.id, amount, odds })}
+              >
+                {existingBet ? "Locked" : "Predict"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <div className="card-actions">
+        <label>
+          ENFECOINS
+          <input type="number" min="1" max={user.enfecoins} value={amount} onChange={(e) => setAmount(Number(e.target.value) || 1)} />
+        </label>
+        <div>
+          {competition.options.map((option) => (
+            <button key={option.id} type="button" onClick={() => onResolve({ competitionId: competition.id, winningOptionId: option.id })}>
+              Winner: {option.label}
+            </button>
+          ))}
+          <button type="button" className="danger" onClick={() => onDelete(competition.id)}>
+            Delete
+          </button>
+        </div>
+      </div>
+    </motion.article>
+  );
+}
+
+function CompetitionCreator({ onCreate }) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [participants, setParticipants] = useState("");
+  const [category, setCategory] = useState("active");
+  const [options, setOptions] = useState("Team Alpha\nTeam Omega");
+
+  function submit(event) {
+    event.preventDefault();
+    const parsed = options.split("\n").map((item) => item.trim()).filter(Boolean).slice(0, 6);
+    if (!title.trim() || parsed.length < 2) return;
+    onCreate({
+      title: title.trim(),
+      description: description.trim() || "Fictional arena challenge.",
+      participants: participants.trim() || "Open lobby",
+      category,
+      timer: "LIVE",
+      options: parsed.map((label, index) => ({ id: `option-${index + 1}`, label }))
+    });
+    setTitle("");
+    setDescription("");
+    setParticipants("");
+    setOptions("Team Alpha\nTeam Omega");
+  }
+
+  return (
+    <form className="creator-card" onSubmit={submit}>
+      <div>
+        <p className="eyebrow">Create competition</p>
+        <h3>Launch a new arena</h3>
+      </div>
+      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Competition title" />
+      <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description" />
+      <input value={participants} onChange={(e) => setParticipants(e.target.value)} placeholder="Participants" />
+      <select value={category} onChange={(e) => setCategory(e.target.value)}>
+        {categories.map((item) => (
+          <option key={item.id} value={item.id}>{item.label}</option>
+        ))}
+      </select>
+      <textarea value={options} onChange={(e) => setOptions(e.target.value)} placeholder="One prediction option per line" />
+      <button type="submit">Create Arena</button>
+    </form>
+  );
+}
+
+function WhoBetWhat({ users, competitions }) {
+  const bets = competitions.flatMap((competition) =>
+    competition.bets.map((bet) => ({ ...bet, competitionTitle: competition.title }))
+  );
+
+  return (
+    <section className="section-card">
+      <p className="eyebrow">Realtime social predictions</p>
+      <h2>WHO BET WHAT</h2>
+      <div className="social-grid">
+        {!bets.length ? <p className="empty-state">No predictions yet. The arena is waiting.</p> : null}
+        {bets.slice(-12).reverse().map((bet) => {
+          const user = users.find((item) => item.id === bet.userId);
+          return (
+            <article key={bet.id} className="social-card">
+              <div className="avatar">{user?.avatar ?? bet.username.charAt(0)}</div>
+              <div>
+                <h3>{bet.username}</h3>
+                <p>Competition: {bet.competitionTitle}</p>
+                <p>Prediction: {bet.optionLabel}</p>
+                <p>Bet: {bet.amount} ENFECOINS / Odds x{bet.odds}</p>
+                <span>{rankFor(user ?? {})}</span>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
 }
 
 function Dashboard({ state, setState, onLogout }) {
-  const [activeTriggers, setActiveTriggers] = useState([]);
-  const userPrediction = state.predictions.find((prediction) => prediction.userId === state.user?.id);
-  const odds = useMemo(
-    () =>
-      calculateOdds({
-        predictions: state.predictions,
-        probability: state.probability,
-        volatility: state.volatility,
-        activeTriggerCount: state.activeTriggerCount,
-        incidents: state.incidents
-      }),
-    [state.predictions, state.probability, state.volatility, state.activeTriggerCount, state.incidents]
-  );
+  const userProfile = state.users.find((user) => user.id === state.user?.id) ?? state.user;
+  const activeCompetitions = state.competitions.filter((item) => item.status === "active");
+  const topPlayer = [...state.users].sort((a, b) => (b.enfecoins ?? 0) - (a.enfecoins ?? 0))[0];
+  const totalCoins = state.users.reduce((sum, user) => sum + (user.enfecoins ?? 0), 0);
 
-  const userProfile = useMemo(() => {
-    return state.users.find((user) => user.id === state.user?.id);
-  }, [state.user?.id, state.users]);
-
-  function pushFeed(message) {
-    setState((current) => ({
-      ...current,
-      feed: [message, ...current.feed].slice(0, 12)
-    }));
-  }
-
-  function placePrediction({ period, amount, odds: selectedOdds }) {
-    if (!state.user) return;
-    if (userPrediction) {
-      pushFeed(`${state.user.username} tentou uma segunda previsao diaria. O mercado rejeitou.`);
-      return;
-    }
-    if ((userProfile?.crycoins ?? 0) < amount) {
-      pushFeed(`${state.user.username} tentou apostar CRYCOINS demais. Mercado negou.`);
-      return;
-    }
-    const confidence = Math.floor(55 + Math.random() * 44);
-    const newPrediction = {
-      id: makeId("prediction"),
-      userId: state.user.id,
-      username: state.user.username,
-      avatar: state.user.avatar,
-      period,
-      amount,
-      odds: selectedOdds,
-      confidence,
-      placedAt: nowLabel(),
-      rank: userProfile?.title ?? analystTitles[0],
-      previouslyCorrect: Boolean(userProfile?.correct),
-      settled: false
-    };
-
-    setState((current) => ({
-      ...current,
-      user: { ...current.user, crycoins: current.user.crycoins - amount },
-      users: current.users.map((user) =>
-        user.id === current.user.id ? { ...user, crycoins: user.crycoins - amount } : user
-      ),
-      predictions: [
-        newPrediction,
-        ...current.predictions.filter((prediction) => prediction.userId !== current.user.id)
-      ],
-      dangerousPeriod: periodLabel(period),
-      probability: clamp(current.probability + 3),
-      graph: [...current.graph.slice(1), clamp(current.probability + 8)],
-      feed: [
-        `${current.user.username} colocou ${amount} CRYCOINS em ${periodLabel(period)} x${selectedOdds}`,
-        ...current.feed
-      ].slice(0, 12)
-    }));
-  }
-
-  function activateTrigger(trigger) {
-    setActiveTriggers((current) => [trigger, ...current.filter((item) => item !== trigger)].slice(0, 5));
-    setState((current) => {
-      const probability = clamp(current.probability + 7);
-      const stability = clamp(current.stability - 6);
-      const volatility = clamp(current.volatility + 5);
-      return {
-        ...current,
-        probability,
-        stability,
-        volatility,
-        activeTriggerCount: current.activeTriggerCount + 1,
-        riskLevel: probability > 82 ? "CRITICO" : probability > 66 ? "ALTO" : "ELEVADO",
-        graph: [...current.graph.slice(1), probability],
-        feed: [`${current.user.username} detectou instabilidade emocional`, "ALERTA: risco emocional aumentando", `GATILHO ARMADO: ${trigger}`, ...current.feed].slice(0, 12)
-      };
-    });
-  }
-
-  function registerIncident(form) {
-    const incidentPeriod = form.period;
-    const incident = {
-      id: makeId("incident"),
-      cause: form.cause.trim(),
-      time: form.time || nowLabel(),
-      duration: form.duration || "Duracao desconhecida",
-      severity: form.severity,
-      period: incidentPeriod,
-      createdAt: `RELATORIO CLASSIFICADO ${String(state.incidents.length + 1).padStart(3, "0")}`
-    };
-
-    setState((current) => {
-      const settledUsers = settlePredictions({
-        users: current.users,
-        predictions: current.predictions,
-        incidentPeriod
-      });
-
-      return {
-        ...current,
-        users: settledUsers,
-        user: settledUsers.find((user) => user.id === current.user.id) ?? current.user,
-        predictions: current.predictions.map((prediction) => ({ ...prediction, settled: true })),
-        incidents: [incident, ...current.incidents],
-        probability: clamp(current.probability + 11),
-        stability: clamp(current.stability - 10),
-        volatility: clamp(current.volatility + 9),
-        lastCryHours: 0,
-        riskLevel: "CRITICO",
-        graph: [...current.graph.slice(1), clamp(current.probability + 11)],
-        feed: [
-          `${periodLabel(incidentPeriod)} foi o periodo vencedor do evento emocional`,
-          `${current.user.username} registrou evento emocional da Cachinhos`,
-          "Evento emocional com alta probabilidade detectado",
-          ...current.feed
-        ].slice(0, 12)
-      };
-    });
-  }
-
-  function sendChatMessage({ type, toId, text }) {
-    const message = {
-      id: makeId("chat"),
-      type,
-      text,
-      fromId: state.user.id,
-      fromName: state.user.username,
-      toId,
-      createdAt: new Date().toISOString()
-    };
-
-    setState((current) => ({
-      ...current,
-      chatMessages: [...(current.chatMessages ?? []), message].slice(-200),
-      feed:
-        type === "global"
-          ? [`${current.user.username} enviou mensagem no chat geral`, ...current.feed].slice(0, 12)
-          : current.feed
-    }));
-  }
-
-  function createCompetition({ title, options }) {
+  function createCompetition(data) {
     const competition = {
       id: makeId("competition"),
-      title,
-      options,
+      ...data,
       bets: [],
       status: "active",
       createdById: state.user.id,
       createdByName: state.user.username,
       createdAt: new Date().toISOString()
     };
-
     setState((current) => ({
       ...current,
-      competitions: [competition, ...(current.competitions ?? [])],
-      feed: [`${current.user.username} criou mini competicao: ${title}`, ...current.feed].slice(0, 12)
+      competitions: [competition, ...current.competitions],
+      volatility: clamp(current.volatility + 4),
+      graph: [...current.graph.slice(1), clamp(current.volatility + 12)],
+      feed: [`${current.user.username} created ${competition.title}`, ...current.feed].slice(0, 20)
     }));
   }
 
   function betCompetition({ competitionId, optionId, amount, odds }) {
     setState((current) => {
-      const competition = (current.competitions ?? []).find((item) => item.id === competitionId);
-      const alreadyBet = competition?.bets.some((bet) => bet.userId === current.user.id);
-      if (!competition || alreadyBet || (current.user.crycoins ?? 0) < amount) return current;
-
+      const competition = current.competitions.find((item) => item.id === competitionId);
+      if (!competition || competition.bets.some((bet) => bet.userId === current.user.id) || current.user.enfecoins < amount) return current;
       const option = competition.options.find((item) => item.id === optionId);
       const bet = {
-        id: makeId("competition-bet"),
+        id: makeId("bet"),
         userId: current.user.id,
         username: current.user.username,
         optionId,
-        optionLabel: option?.label ?? "Opcao desconhecida",
+        optionLabel: option?.label ?? "Unknown",
         amount,
         odds,
+        confidence: Math.floor(55 + Math.random() * 44),
         createdAt: new Date().toISOString()
       };
-
       return {
         ...current,
-        user: { ...current.user, crycoins: current.user.crycoins - amount },
-        users: current.users.map((user) =>
-          user.id === current.user.id ? { ...user, crycoins: user.crycoins - amount } : user
-        ),
-        competitions: current.competitions.map((item) =>
-          item.id === competitionId ? { ...item, bets: [...item.bets, bet] } : item
-        ),
-        feed: [
-          `${current.user.username} colocou ${amount} CRYCOINS em "${bet.optionLabel}"`,
-          ...current.feed
-        ].slice(0, 12)
+        user: { ...current.user, enfecoins: current.user.enfecoins - amount },
+        users: current.users.map((user) => user.id === current.user.id ? { ...user, enfecoins: user.enfecoins - amount } : user),
+        competitions: current.competitions.map((item) => item.id === competitionId ? { ...item, bets: [...item.bets, bet] } : item),
+        volatility: clamp(current.volatility + 2),
+        totalCoinFlow: current.totalCoinFlow + amount,
+        feed: [`${current.user.username} placed ${amount} ENFECOINS on ${option?.label}`, ...current.feed].slice(0, 20)
       };
     });
   }
 
   function resolveCompetition({ competitionId, winningOptionId }) {
     setState((current) => {
-      const competition = (current.competitions ?? []).find((item) => item.id === competitionId);
+      const competition = current.competitions.find((item) => item.id === competitionId);
       if (!competition || competition.status !== "active") return current;
-
-      const winningOption = competition.options.find((option) => option.id === winningOptionId);
-      const updatedUsers = current.users.map((user) => {
-        const winningBet = competition.bets.find(
-          (bet) => bet.userId === user.id && bet.optionId === winningOptionId
-        );
-        if (!winningBet) return user;
-        const reward = Math.round(winningBet.amount * winningBet.odds);
-        return {
+      const winner = competition.options.find((item) => item.id === winningOptionId);
+      const users = current.users.map((user) => {
+        const bet = competition.bets.find((item) => item.userId === user.id);
+        if (!bet) return user;
+        const won = bet.optionId === winningOptionId;
+        const reward = won ? Math.round(bet.amount * bet.odds) : 0;
+        const next = {
           ...user,
-          crycoins: (user.crycoins ?? 0) + reward,
+          enfecoins: user.enfecoins + reward,
+          wins: (user.wins ?? 0) + (won ? 1 : 0),
+          losses: (user.losses ?? 0) + (won ? 0 : 1),
           totalWon: (user.totalWon ?? 0) + reward,
-          bestOddsWon: Math.max(user.bestOddsWon ?? 0, winningBet.odds),
-          winstreak: (user.winstreak ?? 0) + 1,
-          score: (user.score ?? 0) + reward
+          totalLost: (user.totalLost ?? 0) + (won ? 0 : bet.amount),
+          bestOddsWon: won ? Math.max(user.bestOddsWon ?? 0, bet.odds) : user.bestOddsWon ?? 0,
+          winstreak: won ? (user.winstreak ?? 0) + 1 : 0
         };
+        return { ...next, rank: rankFor(next) };
       });
-
       return {
         ...current,
-        users: updatedUsers,
-        user: updatedUsers.find((user) => user.id === current.user.id) ?? current.user,
-        competitions: current.competitions.map((item) =>
-          item.id === competitionId
-            ? { ...item, status: "resolved", winningOptionId, resolvedAt: new Date().toISOString() }
-            : item
-        ),
-        feed: [
-          `Mini competicao encerrada: venceu "${winningOption?.label ?? "opcao indefinida"}"`,
-          ...current.feed
-        ].slice(0, 12)
+        users,
+        user: users.find((user) => user.id === current.user.id) ?? current.user,
+        competitions: current.competitions.map((item) => item.id === competitionId ? { ...item, status: "resolved", winningOptionId } : item),
+        feed: [`${competition.title} ended. Winner: ${winner?.label}`, ...current.feed].slice(0, 20)
       };
     });
   }
 
-  function deleteCompetition(competitionId) {
-    setState((current) => {
-      const competition = (current.competitions ?? []).find((item) => item.id === competitionId);
-      return {
-        ...current,
-        competitions: (current.competitions ?? []).filter((item) => item.id !== competitionId),
-        feed: competition
-          ? [`${current.user.username} apagou mini competicao: ${competition.title}`, ...current.feed].slice(0, 12)
-          : current.feed
-      };
-    });
+  function deleteCompetition(id) {
+    setState((current) => ({
+      ...current,
+      competitions: current.competitions.filter((item) => item.id !== id),
+      feed: [`${current.user.username} deleted a competition`, ...current.feed].slice(0, 20)
+    }));
+  }
+
+  function sendChatMessage({ type, toId, text }) {
+    const message = { id: makeId("chat"), type, toId, text, fromId: state.user.id, fromName: state.user.username, createdAt: new Date().toISOString() };
+    setState((current) => ({ ...current, chatMessages: [...current.chatMessages, message].slice(-200) }));
   }
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      <div className="noise" />
-      <div className="mx-auto max-w-7xl px-4 py-5 md:px-6 md:py-8">
-        <nav className="mb-5 flex flex-col gap-3 border border-white/30 bg-black/80 p-3 font-mono text-xs uppercase sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-3">
-            <span className="border border-white/30 px-3 py-2">CRYBET LIVE</span>
-            <span className="border border-white/30 px-3 py-2">🪙 {userProfile?.crycoins ?? 0} CRYCOINS</span>
-            <span className="border border-white/30 px-3 py-2">Online: {state.users.filter((user) => user.active).length}</span>
-          </div>
-          <button
-            className="border border-white px-4 py-2 transition hover:bg-white hover:text-black"
-            type="button"
-            onClick={onLogout}
-          >
-            Sair
-          </button>
-        </nav>
-
-        <header className="mb-8 grid gap-5 border-b border-white/25 pb-8 lg:grid-cols-[1fr_360px] lg:items-end">
-          <div>
-            <p className="mono-label">Evento de fim de semana: prever quando Cachinhos vai chorar / sem dinheiro / sem apostas reais</p>
-            <motion.h1
-              className="glitch mt-3 font-display text-7xl leading-none tracking-normal md:text-9xl"
-              initial={false}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              CRYBET
-            </motion.h1>
-            <p className="mt-3 max-w-2xl font-mono text-sm uppercase text-white/70 md:text-base">
-              O mercado emocional ficticio onde amigos tentam prever a janela exata do fim de semana.
-            </p>
-          </div>
-          <div className="panel p-4 font-mono text-xs uppercase">
-            <p className="mono-label">Perfil do analista</p>
-            <h2 className="mt-2 font-display text-3xl uppercase">{state.user.username}</h2>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <span>Saldo: 🪙 {userProfile?.crycoins ?? 0}</span>
-              <span>Ganhou: {userProfile?.totalWon ?? 0}</span>
-              <span>Perdeu: {userProfile?.totalLost ?? 0}</span>
-              <span>Melhor odd: x{userProfile?.bestOddsWon ?? 0}</span>
-              <span>Modo: {backendMode}</span>
-              <span>Previsao: {userPrediction ? "travada" : "disponivel"}</span>
-            </div>
-          </div>
-        </header>
-
-        <p className="mono-label mb-3">1. Hero Section / status emocional</p>
-        <section className="mb-5 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-          <MetricCard label="Probabilidade da Cachinhos Chorar" value={`${state.probability}%`} detail="estimativa IA" intense />
-          <MetricCard label="Medidor Emocional ao Vivo" value={`${state.stability}%`} detail="estabilidade" />
-          <MetricCard label="Risco Emocional Atual" value={state.riskLevel} detail="ficticio" intense={state.riskLevel === "CRITICO"} />
-          <MetricCard label="Horas Desde o Ultimo Choro" value={state.lastCryHours} detail="volatil" />
-          <MetricCard label="Periodo Emocional Mais Perigoso" value={state.dangerousPeriod} detail="janela do mercado" />
-          <MetricCard label="Indice de Volatilidade Emocional" value={state.volatility} detail="IVE" />
-        </section>
-
-        <div className="grid gap-6 xl:grid-cols-[1.38fr_.62fr]">
-          <div className="space-y-6">
-            <p className="mono-label">2. Prediction / Betting Section</p>
-            <PredictionCards
-              predictions={state.predictions}
-              selected={userPrediction?.period}
-              onSelect={placePrediction}
-              locked={Boolean(userPrediction)}
-              odds={odds}
-              balance={userProfile?.crycoins ?? 0}
-              probability={state.probability}
-            />
-            <p className="mono-label">3. Live Market Section</p>
-            <Graph data={state.graph} />
-            <p className="mono-label">4. Social Section</p>
-            <PredictionBoard users={state.users} predictions={state.predictions} />
-            <ChatPanel
-              user={state.user}
-              users={state.users}
-              messages={state.chatMessages ?? []}
-              onSend={sendChatMessage}
-            />
-            <Competitions
-              user={userProfile ?? state.user}
-              users={state.users}
-              competitions={state.competitions ?? []}
-              onCreate={createCompetition}
-              onBet={betCompetition}
-              onResolve={resolveCompetition}
-              onDelete={deleteCompetition}
-            />
-            <p className="mono-label">5. Incidents + Triggers Section</p>
-            <IncidentArchive incidents={state.incidents} onRegister={registerIncident} />
-          </div>
-          <div className="space-y-6">
-            <p className="mono-label">Market Alerts + Profile Rankings</p>
-            <WarningPanel probability={state.probability} riskLevel={state.riskLevel} />
-            <MarketAnalysis
-              users={state.users}
-              predictions={state.predictions}
-              probability={state.probability}
-              stability={state.stability}
-              odds={odds}
-            />
-            <Triggers activeTriggers={activeTriggers} onTrigger={activateTrigger} />
-            <LiveFeed feed={state.feed} />
-            <Leaderboard users={state.users} />
-          </div>
+    <main className="app-shell">
+      <nav className="topbar">
+        <div className="brand-pill">ENFE 2026</div>
+        <div className="nav-stats">
+          <span>🪙 {money(userProfile.enfecoins)} ENFECOINS</span>
+          <span>{rankFor(userProfile)}</span>
+          <span>{backendMode}</span>
         </div>
+        <button onClick={onLogout}>Logout</button>
+      </nav>
+
+      <section className="hero-section">
+        <div className="hero-glow" />
+        <p className="eyebrow">Fictional social arena / no real-world financial value</p>
+        <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>ENFE 2026</motion.h1>
+        <p>The Ultimate Competition Arena</p>
+        <div className="hero-metrics">
+          <MetricCard label="Players Online" value={state.users.filter((user) => user.active).length} detail="live" />
+          <MetricCard label="Active Tournaments" value={state.competitions.filter((item) => item.category === "tournament" && item.status === "active").length} detail="brackets" />
+          <MetricCard label="Live Competitions" value={activeCompetitions.length} detail="arenas" />
+          <MetricCard label="Top Player" value={topPlayer?.username ?? "--"} detail="current" />
+          <MetricCard label="Weekend Event" value={state.eventStatus} detail="status" />
+          <MetricCard label="Coin Circulation" value={`🪙 ${totalCoins}`} detail="fictional" />
+        </div>
+      </section>
+
+      <div className="dashboard-grid">
+        <div className="main-stack">
+          <section className="section-card">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Live competitions</p>
+                <h2>Arena Board</h2>
+              </div>
+              <span>{activeCompetitions.length} active</span>
+            </div>
+            <CompetitionCreator onCreate={createCompetition} />
+            {!state.competitions.length ? (
+              <div className="template-grid">
+                {starterCompetitions.map((item) => (
+                  <button
+                    key={item.title}
+                    type="button"
+                    className="template-card"
+                    onClick={() =>
+                      createCompetition({
+                        ...item,
+                        options: item.options.map((label, index) => ({ id: `option-${index + 1}`, label }))
+                      })
+                    }
+                  >
+                    <span>{item.category}</span>
+                    <strong>{item.title}</strong>
+                    <p>{item.description}</p>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            <div className="competition-list">
+              {state.competitions.map((competition) => (
+                <CompetitionCard
+                  key={competition.id}
+                  competition={competition}
+                  user={userProfile}
+                  onBet={betCompetition}
+                  onResolve={resolveCompetition}
+                  onDelete={deleteCompetition}
+                />
+              ))}
+            </div>
+          </section>
+
+          <section className="section-card">
+            <p className="eyebrow">Weekend events</p>
+            <h2>Weekend Arena</h2>
+            <div className="weekend-grid">
+              {weekendEvents.map((event) => (
+                <article key={`${event.day}-${event.title}`} className="event-card">
+                  <span>{event.day}</span>
+                  <h3>{event.title}</h3>
+                  <p>{event.description}</p>
+                  <strong>{event.status}</strong>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <WhoBetWhat users={state.users} competitions={state.competitions} />
+          <ChatPanel user={state.user} users={state.users} messages={state.chatMessages} onSend={sendChatMessage} />
+        </div>
+
+        <aside className="side-stack">
+          <section className="section-card player-profile">
+            <p className="eyebrow">Player profile</p>
+            <div className="profile-row">
+              <div className="avatar large">{userProfile.avatar}</div>
+              <div>
+                <h2>{userProfile.username}</h2>
+                <p>{rankFor(userProfile)}</p>
+              </div>
+            </div>
+            <div className="profile-stats">
+              <span>Coins 🪙 {money(userProfile.enfecoins)}</span>
+              <span>Wins {userProfile.wins ?? 0}</span>
+              <span>Losses {userProfile.losses ?? 0}</span>
+              <span>Winstreak {userProfile.winstreak ?? 0}</span>
+              <span>Best odds x{userProfile.bestOddsWon ?? 0}</span>
+              <span>Favorite {userProfile.favoriteCompetition ?? "Open Arena"}</span>
+            </div>
+          </section>
+
+          <section className="section-card">
+            <p className="eyebrow">Live market dashboard</p>
+            <h2>Market Pulse</h2>
+            <Graph data={state.graph} />
+            <div className="market-stats">
+              <span>Volatility {state.volatility}%</span>
+              <span>Coin flow 🪙 {state.totalCoinFlow}</span>
+              <span>Trending {state.topEvent}</span>
+            </div>
+          </section>
+
+          <LiveFeed feed={state.feed.length ? state.feed : ["Weekend Arena event is now live"]} />
+          <Leaderboard users={state.users} />
+        </aside>
       </div>
     </main>
   );
@@ -397,15 +445,15 @@ function Dashboard({ state, setState, onLogout }) {
 export default function App() {
   const [state, setState] = useState(() => loadState());
   const applyingRemote = useRef(false);
-  const lastCloudSnapshot = useRef("");
   const cloudReady = useRef(!supabase);
+  const lastCloudSnapshot = useRef("");
 
   useEffect(() => {
-    const mustHardReset = window.localStorage.getItem("crybet-force-empty-now") !== "weekend-v1";
-    if (mustHardReset) {
+    const mustReset = window.localStorage.getItem("enfe-force-state") !== "v1";
+    if (mustReset) {
       resetCrybetStorage();
-      window.localStorage.setItem("crybet-reset-marker", "weekend-market-v1");
-      window.localStorage.setItem("crybet-force-empty-now", "weekend-v1");
+      window.localStorage.setItem("enfe-reset-marker", "enfe-2026-v1");
+      window.localStorage.setItem("enfe-force-state", "v1");
       setState(emptyState());
     }
   }, []);
@@ -413,16 +461,15 @@ export default function App() {
   useEffect(() => {
     if (!supabase) return undefined;
     let cancelled = false;
-
     loadCloudState().then((cloudState) => {
       cloudReady.current = true;
-      if (cancelled || !cloudState || Object.keys(cloudState).length === 0) return;
+      if (cancelled || !cloudState || Object.keys(cloudState).length === 0 || cloudState.platform !== "enfe-2026") return;
       lastCloudSnapshot.current = JSON.stringify(cloudState);
       applyingRemote.current = true;
       setState((current) => ({ ...current, ...cloudState, user: current.user }));
     });
-
     return subscribeCloudState((cloudState) => {
+      if (cloudState.platform !== "enfe-2026") return;
       lastCloudSnapshot.current = JSON.stringify(cloudState);
       applyingRemote.current = true;
       setState((current) => ({ ...current, ...cloudState, user: current.user }));
@@ -435,66 +482,48 @@ export default function App() {
       applyingRemote.current = false;
       return;
     }
-
-    const cloudSnapshot = JSON.stringify(toCloudState(state));
-    if (cloudSnapshot === lastCloudSnapshot.current) return;
-    lastCloudSnapshot.current = cloudSnapshot;
+    const snapshot = JSON.stringify(toCloudState(state));
+    if (snapshot === lastCloudSnapshot.current) return;
+    lastCloudSnapshot.current = snapshot;
     saveCloudState(state);
   }, [state]);
 
-  function activateUser(profile, actionLabel) {
-    const activeProfile = { ...profile, active: true };
+  function activateUser(profile, label) {
+    const activeProfile = { ...profile, active: true, rank: rankFor(profile) };
     setState((current) => ({
       ...current,
       user: activeProfile,
-      users: [activeProfile, ...current.users.filter((item) => item.id !== activeProfile.id)].map((item) =>
-        item.id === activeProfile.id ? { ...item, active: true } : item
+      users: [activeProfile, ...current.users.filter((user) => user.id !== activeProfile.id)].map((user) =>
+        user.id === activeProfile.id ? activeProfile : user
       ),
-      feed: [`${activeProfile.username} ${actionLabel}`, ...current.feed].slice(0, 12)
+      feed: [`${activeProfile.username} ${label}`, ...current.feed].slice(0, 20)
     }));
   }
 
   function register(user) {
-    const profile = {
+    activateUser({
       id: makeId("user"),
       username: user.username,
       avatar: user.avatar,
-      correct: 0,
-      wrong: 0,
-      crycoins: 50,
+      enfecoins: 50,
+      wins: 0,
+      losses: 0,
       totalWon: 0,
       totalLost: 0,
       bestOddsWon: 0,
       winstreak: 0,
-      favoritePeriod: "Indefinido",
-      score: 100,
-      title: analystTitles[Math.floor(Math.random() * analystTitles.length)],
-      active: true
-    };
-
-    activateUser(profile, "se cadastrou no mercado emocional");
-  }
-
-  function login(profile) {
-    activateUser(profile, "entrou no mercado emocional");
+      favoriteCompetition: "Open Arena"
+    }, "joined ENFE 2026");
   }
 
   function logout() {
     setState((current) => ({
       ...current,
       user: null,
-      users: current.users.map((user) =>
-        user.id === current.user?.id ? { ...user, active: false } : user
-      ),
-      feed: current.user
-        ? [`${current.user.username} saiu do mercado emocional`, ...current.feed].slice(0, 12)
-        : current.feed
+      users: current.users.map((user) => user.id === current.user?.id ? { ...user, active: false } : user)
     }));
   }
 
-  if (!state.user) {
-    return <Login users={state.users} onLogin={login} onRegister={register} />;
-  }
-
+  if (!state.user) return <Login users={state.users} onLogin={(user) => activateUser(user, "entered the arena")} onRegister={register} />;
   return <Dashboard state={state} setState={setState} onLogout={logout} />;
 }

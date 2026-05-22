@@ -41,22 +41,22 @@ export function ChatPanel({ user, users, messages, onSend }) {
   }
 
   return (
-    <section className="panel p-5 md:p-6">
+    <section className="section-card">
       <div className="mb-4 grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
         <div>
-          <p className="mono-label">Comunicacao do mercado emocional</p>
-          <h2 className="section-title">Chat CRYBET</h2>
+          <p className="eyebrow">Arena voice channel</p>
+          <h2>ENFE Chat</h2>
         </div>
         <div className="grid grid-cols-2 border border-white/50 font-mono text-xs uppercase">
           <button
-            className={`px-4 py-2 ${mode === "global" ? "bg-white text-black" : "bg-black text-white"}`}
+              className={mode === "global" ? "active" : ""}
             type="button"
             onClick={() => setMode("global")}
           >
             Geral
           </button>
           <button
-            className={`px-4 py-2 ${mode === "private" ? "bg-white text-black" : "bg-black text-white"}`}
+              className={mode === "private" ? "active" : ""}
             type="button"
             onClick={() => setMode("private")}
           >
@@ -67,7 +67,7 @@ export function ChatPanel({ user, users, messages, onSend }) {
 
       {mode === "private" ? (
         <label className="mb-4 grid gap-2 font-mono text-xs uppercase">
-          Escolher usuario
+          Choose player
           <select className="input" value={recipientId} onChange={(event) => setRecipientId(event.target.value)}>
             <option value="">Selecione alguem</option>
             {availableUsers.map((item) => (
@@ -82,7 +82,7 @@ export function ChatPanel({ user, users, messages, onSend }) {
       <div className="chat-window">
         {!visibleMessages.length ? (
           <p className="p-4 text-center font-mono text-xs uppercase text-white/50">
-            {mode === "global" ? "Nenhuma mensagem geral ainda." : "Nenhuma conversa privada selecionada."}
+            {mode === "global" ? "No global messages yet." : "No private conversation selected."}
           </p>
         ) : null}
         {visibleMessages.map((message) => {
@@ -104,11 +104,11 @@ export function ChatPanel({ user, users, messages, onSend }) {
           className="input"
           value={text}
           onChange={(event) => setText(event.target.value)}
-          placeholder={mode === "global" ? "Mensagem para o chat geral" : "Mensagem privada"}
+          placeholder={mode === "global" ? "Message the global arena" : "Private message"}
           maxLength={240}
         />
         <button className="button-primary" type="submit" disabled={mode === "private" && !recipientId}>
-          Enviar
+          Send
         </button>
       </form>
     </section>

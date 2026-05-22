@@ -1,24 +1,24 @@
-import { seedFeed, seedGraph, seedIncidents, seedPredictions, seedUsers } from "../data/seed";
+import { seedGraph } from "../data/seed";
 
-const KEY = "crybet-weekend-reset-v1";
-const RESET_MARKER = "crybet-reset-marker";
-const RESET_VERSION = "weekend-market-v1";
+const KEY = "enfe-2026-state-v1";
+const RESET_MARKER = "enfe-reset-marker";
+const RESET_VERSION = "enfe-2026-v1";
 
 const baseState = {
+  platform: "enfe-2026",
   user: null,
-  users: seedUsers,
-  predictions: seedPredictions,
-  incidents: seedIncidents,
-  feed: seedFeed,
+  users: [],
+  predictions: [],
+  incidents: [],
+  feed: [],
   chatMessages: [],
   competitions: [],
   graph: seedGraph,
-  probability: 0,
-  stability: 100,
-  volatility: 0,
-  riskLevel: "SEM DADOS",
-  lastCryHours: 0,
-  dangerousPeriod: "Aguardando fim de semana",
+  marketHeat: 38,
+  volatility: 22,
+  eventStatus: "Weekend Arena loading",
+  topEvent: "Friday Night Arena",
+  totalCoinFlow: 0,
   activeTriggerCount: 0
 };
 
@@ -40,7 +40,7 @@ export function loadState() {
 export function resetCrybetStorage() {
   if (typeof window === "undefined") return;
   Object.keys(window.localStorage)
-    .filter((key) => key.startsWith("crybet-"))
+    .filter((key) => key.startsWith("crybet-") || key.startsWith("enfe-"))
     .forEach((key) => window.localStorage.removeItem(key));
 }
 
