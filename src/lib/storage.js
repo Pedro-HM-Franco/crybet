@@ -11,6 +11,7 @@ const baseState = {
   incidents: seedIncidents,
   feed: seedFeed,
   chatMessages: [],
+  competitions: [],
   graph: seedGraph,
   probability: 0,
   stability: 100,

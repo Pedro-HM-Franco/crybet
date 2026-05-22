@@ -18,6 +18,7 @@ import { PredictionCards } from "./components/PredictionCards";
 import { Triggers } from "./components/Triggers";
 import { WarningPanel } from "./components/WarningPanel";
 import { ChatPanel } from "./components/ChatPanel";
+import { Competitions } from "./components/Competitions";
 
 function periodLabel(id) {
   return periods.find((period) => period.id === id)?.label ?? "Desconhecido";
@@ -176,6 +177,99 @@ function Dashboard({ state, setState, onLogout }) {
     }));
   }
 
+  function createCompetition({ title, options }) {
+    const competition = {
+      id: makeId("competition"),
+      title,
+      options,
+      bets: [],
+      status: "active",
+      createdById: state.user.id,
+      createdByName: state.user.username,
+      createdAt: new Date().toISOString()
+    };
+
+    setState((current) => ({
+      ...current,
+      competitions: [competition, ...(current.competitions ?? [])],
+      feed: [`${current.user.username} criou mini competicao: ${title}`, ...current.feed].slice(0, 12)
+    }));
+  }
+
+  function betCompetition({ competitionId, optionId, amount, odds }) {
+    setState((current) => {
+      const competition = (current.competitions ?? []).find((item) => item.id === competitionId);
+      const alreadyBet = competition?.bets.some((bet) => bet.userId === current.user.id);
+      if (!competition || alreadyBet || (current.user.crycoins ?? 0) < amount) return current;
+
+      const option = competition.options.find((item) => item.id === optionId);
+      const bet = {
+        id: makeId("competition-bet"),
+        userId: current.user.id,
+        username: current.user.username,
+        optionId,
+        optionLabel: option?.label ?? "Opcao desconhecida",
+        amount,
+        odds,
+        createdAt: new Date().toISOString()
+      };
+
+      return {
+        ...current,
+        user: { ...current.user, crycoins: current.user.crycoins - amount },
+        users: current.users.map((user) =>
+          user.id === current.user.id ? { ...user, crycoins: user.crycoins - amount } : user
+        ),
+        competitions: current.competitions.map((item) =>
+          item.id === competitionId ? { ...item, bets: [...item.bets, bet] } : item
+        ),
+        feed: [
+          `${current.user.username} colocou ${amount} CRYCOINS em "${bet.optionLabel}"`,
+          ...current.feed
+        ].slice(0, 12)
+      };
+    });
+  }
+
+  function resolveCompetition({ competitionId, winningOptionId }) {
+    setState((current) => {
+      const competition = (current.competitions ?? []).find((item) => item.id === competitionId);
+      if (!competition || competition.status !== "active") return current;
+
+      const winningOption = competition.options.find((option) => option.id === winningOptionId);
+      const updatedUsers = current.users.map((user) => {
+        const winningBet = competition.bets.find(
+          (bet) => bet.userId === user.id && bet.optionId === winningOptionId
+        );
+        if (!winningBet) return user;
+        const reward = Math.round(winningBet.amount * winningBet.odds);
+        return {
+          ...user,
+          crycoins: (user.crycoins ?? 0) + reward,
+          totalWon: (user.totalWon ?? 0) + reward,
+          bestOddsWon: Math.max(user.bestOddsWon ?? 0, winningBet.odds),
+          winstreak: (user.winstreak ?? 0) + 1,
+          score: (user.score ?? 0) + reward
+        };
+      });
+
+      return {
+        ...current,
+        users: updatedUsers,
+        user: updatedUsers.find((user) => user.id === current.user.id) ?? current.user,
+        competitions: current.competitions.map((item) =>
+          item.id === competitionId
+            ? { ...item, status: "resolved", winningOptionId, resolvedAt: new Date().toISOString() }
+            : item
+        ),
+        feed: [
+          `Mini competicao encerrada: venceu "${winningOption?.label ?? "opcao indefinida"}"`,
+          ...current.feed
+        ].slice(0, 12)
+      };
+    });
+  }
+
   return (
     <main className="min-h-screen bg-black text-white">
       <div className="noise" />
@@ -254,6 +348,14 @@ function Dashboard({ state, setState, onLogout }) {
               users={state.users}
               messages={state.chatMessages ?? []}
               onSend={sendChatMessage}
+            />
+            <Competitions
+              user={userProfile ?? state.user}
+              users={state.users}
+              competitions={state.competitions ?? []}
+              onCreate={createCompetition}
+              onBet={betCompetition}
+              onResolve={resolveCompetition}
             />
             <p className="mono-label">5. Incidents + Triggers Section</p>
             <IncidentArchive incidents={state.incidents} onRegister={registerIncident} />
