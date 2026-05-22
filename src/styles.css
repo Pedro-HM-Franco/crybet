@@ -628,6 +628,49 @@ input:focus, textarea:focus, select:focus {
   font-style: normal;
   font-weight: 950;
 }
+.custom-bet-card {
+  display: grid;
+  grid-template-columns: 1fr 110px 110px auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 14px;
+  border: 1px solid rgba(168, 85, 247, 0.28);
+  border-radius: 18px;
+  background: rgba(168, 85, 247, 0.08);
+  padding: 14px;
+}
+.custom-bet-card p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+.custom-bet-card label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: .75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.custom-bet-card button {
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--purple), var(--blue));
+  color: white;
+  padding: 12px 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.locked-bet {
+  margin-top: 14px;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  border-radius: 16px;
+  background: rgba(74, 222, 128, 0.08);
+  color: var(--green);
+  padding: 12px;
+  font-size: .86rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
 .secondary-section {
   opacity: .92;
 }
@@ -920,7 +963,7 @@ input:focus, textarea:focus, select:focus {
   .hero-metrics, .creator-card, .options-grid, .weekend-grid, .social-grid, .template-grid {
     grid-template-columns: 1fr;
   }
-  .productivity-form, .progress-grid, .demand-controls, .finish-window-grid, .completed-list { grid-template-columns: 1fr; }
+  .productivity-form, .progress-grid, .demand-controls, .finish-window-grid, .completed-list, .custom-bet-card { grid-template-columns: 1fr; }
   .hero-section { padding: 28px 18px; border-radius: 24px; }
   .login-card h1, .hero-section h1 { font-size: 4rem; }
   .nav-stats { width: 100%; }

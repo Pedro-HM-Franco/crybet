@@ -7,7 +7,21 @@ const finishWindows = [
   { id: "over-4h", label: "Mais de 4h", helper: "Modo sobrevivencia" }
 ];
 
+function customWindowId(minutes) {
+  return `custom-${Math.max(1, Number(minutes) || 1)}m`;
+}
+
+function customLabel(minutes) {
+  const value = Math.max(1, Number(minutes) || 1);
+  const hours = Math.floor(value / 60);
+  const mins = value % 60;
+  if (hours && mins) return `${hours}h ${mins}min`;
+  if (hours) return `${hours}h`;
+  return `${mins}min`;
+}
+
 function windowOdds({ windowId, bets, targetProgress }) {
+  if (windowId.startsWith("custom-")) return 4.8;
   const total = Math.max(bets.length, 1);
   const votes = bets.filter((bet) => bet.windowId === windowId && bet.status === "active").length;
   const popularityPenalty = (votes / total) * 2.4;
@@ -27,10 +41,25 @@ export function classifyFinishWindow(startedAt, finishedAt = new Date().toISOStr
   return "over-4h";
 }
 
+export function didFinishBetWin(bet, startedAt, finishedAt) {
+  const start = startedAt ? new Date(startedAt).getTime() : new Date(finishedAt).getTime();
+  const end = new Date(finishedAt).getTime();
+  const minutes = Math.max(0, Math.round((end - start) / 60000));
+
+  if (bet.windowId?.startsWith("custom-")) {
+    const guessed = Number(bet.windowId.replace("custom-", "").replace("m", ""));
+    return Math.abs(minutes - guessed) <= 15;
+  }
+
+  return bet.windowId === classifyFinishWindow(startedAt, finishedAt);
+}
+
 export function DemandBetting({ user, users, productivity, finishBets, onBet }) {
   const productiveUsers = users.filter((item) => productivity[item.id]?.currentTask || productivity[item.id]?.currentFile);
   const [targetId, setTargetId] = useState(productiveUsers[0]?.id ?? "");
   const [amount, setAmount] = useState(5);
+  const [customHours, setCustomHours] = useState(1);
+  const [customMinutes, setCustomMinutes] = useState(0);
 
   const target = users.find((item) => item.id === targetId);
   const targetStats = productivity[targetId] ?? {};
@@ -38,6 +67,9 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
   const existingBet = finishBets.find(
     (bet) => bet.targetUserId === targetId && bet.bettorId === user.id && bet.status === "active"
   );
+  const customTotalMinutes = Number(customHours || 0) * 60 + Number(customMinutes || 0);
+  const customId = customWindowId(customTotalMinutes);
+  const customOdds = windowOdds({ windowId: customId, bets: activeBets, targetProgress: targetStats.progress ?? 0 });
 
   const odds = useMemo(() => {
     return finishWindows.reduce((acc, item) => {
@@ -103,7 +135,40 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
               </button>
             ))}
           </div>
-          {existingBet ? <p className="empty-state">Você já tem um palpite ativo nessa demanda.</p> : null}
+          <div className="custom-bet-card">
+            <div>
+              <span className="field-title">Palpite personalizado</span>
+              <p>Escolha um tempo exato. Ganha se ficar dentro de 15 minutos do tempo real.</p>
+            </div>
+            <label>
+              Horas
+              <input type="number" min="0" max="24" value={customHours} onChange={(event) => setCustomHours(Number(event.target.value) || 0)} />
+            </label>
+            <label>
+              Minutos
+              <input type="number" min="0" max="59" value={customMinutes} onChange={(event) => setCustomMinutes(Number(event.target.value) || 0)} />
+            </label>
+            <button
+              type="button"
+              disabled={Boolean(existingBet) || user.enfecoins < amount || customTotalMinutes <= 0}
+              onClick={() =>
+                onBet({
+                  targetUserId: targetId,
+                  windowId: customId,
+                  windowLabel: customLabel(customTotalMinutes),
+                  amount,
+                  odds: customOdds
+                })
+              }
+            >
+              Apostar em {customLabel(customTotalMinutes)} / x{customOdds}
+            </button>
+          </div>
+          {existingBet ? (
+            <div className="locked-bet">
+              Palpite travado: {existingBet.windowLabel || finishWindows.find((item) => item.id === existingBet.windowId)?.label} / {existingBet.amount} ENFECOINS / x{existingBet.odds}
+            </div>
+          ) : null}
         </>
       )}
     </section>

@@ -4,7 +4,7 @@ import { ChatPanel } from "./components/ChatPanel";
 import { Leaderboard } from "./components/Leaderboard";
 import { LiveFeed } from "./components/LiveFeed";
 import { MetricCard } from "./components/MetricCard";
-import { DemandBetting, classifyFinishWindow } from "./components/DemandBetting";
+import { DemandBetting, classifyFinishWindow, didFinishBetWin } from "./components/DemandBetting";
 import { CompletedDemands, ProductivityPanel, TeamProgress } from "./components/ProductivityPanel";
 import { categories, challengeTypes, rankFor } from "./data/enfe";
 import { loadCloudState, saveCloudState, subscribeCloudState, toCloudState } from "./lib/cloudState";
@@ -428,7 +428,7 @@ function Dashboard({ state, setState, onLogout }) {
     return `${minutes}min`;
   }
 
-  function placeFinishBet({ targetUserId, windowId, amount, odds }) {
+  function placeFinishBet({ targetUserId, windowId, windowLabel, amount, odds }) {
     setState((current) => {
       const target = current.users.find((user) => user.id === targetUserId);
       const already = (current.finishBets ?? []).some(
@@ -442,6 +442,7 @@ function Dashboard({ state, setState, onLogout }) {
         targetUserId,
         targetName: target.username,
         windowId,
+        windowLabel,
         amount,
         odds,
         status: "active",
@@ -466,7 +467,7 @@ function Dashboard({ state, setState, onLogout }) {
       const durationLabel = formatDuration(stats.startedAt, finishedAt);
       const finishBets = (current.finishBets ?? []).map((bet) =>
         bet.targetUserId === current.user.id && bet.status === "active"
-          ? { ...bet, status: "resolved", winningWindow, won: bet.windowId === winningWindow, resolvedAt: finishedAt }
+          ? { ...bet, status: "resolved", winningWindow, won: didFinishBetWin(bet, stats.startedAt, finishedAt), resolvedAt: finishedAt }
           : bet
       );
       const users = current.users.map((user) => {
