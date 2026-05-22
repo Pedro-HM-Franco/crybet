@@ -16,7 +16,7 @@ function userBetFor(competition, userId) {
   return competition.bets.find((bet) => bet.userId === userId);
 }
 
-export function Competitions({ user, users, competitions, onCreate, onBet, onResolve }) {
+export function Competitions({ user, users, competitions, onCreate, onBet, onResolve, onDelete }) {
   const [title, setTitle] = useState("");
   const [rawOptions, setRawOptions] = useState("Pedro termina primeiro\nMaria termina primeiro");
   const [amounts, setAmounts] = useState({});
@@ -144,7 +144,16 @@ export function Competitions({ user, users, competitions, onCreate, onBet, onRes
               </div>
 
               <div className="mt-4 border-t border-white/25 pt-3">
-                <p className="mb-2 font-mono text-xs uppercase text-white/60">Encerrar competição</p>
+                <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="font-mono text-xs uppercase text-white/60">Encerrar ou apagar competição</p>
+                  <button
+                    className="border border-white/40 px-3 py-2 font-mono text-xs uppercase transition hover:bg-white hover:text-black"
+                    type="button"
+                    onClick={() => onDelete(competition.id)}
+                  >
+                    Apagar competição
+                  </button>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {competition.options.map((option) => (
                     <button
@@ -173,6 +182,13 @@ export function Competitions({ user, users, competitions, onCreate, onBet, onRes
                 <article key={competition.id} className="border border-white/25 p-3 font-mono text-xs uppercase">
                   <strong className="block font-display text-xl">{competition.title}</strong>
                   <span className="text-white/60">Vencedor: {winner?.label ?? "indefinido"}</span>
+                  <button
+                    className="mt-3 block border border-white/40 px-3 py-2 transition hover:bg-white hover:text-black"
+                    type="button"
+                    onClick={() => onDelete(competition.id)}
+                  >
+                    Apagar registro
+                  </button>
                 </article>
               );
             })}

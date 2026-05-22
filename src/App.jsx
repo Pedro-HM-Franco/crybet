@@ -270,6 +270,19 @@ function Dashboard({ state, setState, onLogout }) {
     });
   }
 
+  function deleteCompetition(competitionId) {
+    setState((current) => {
+      const competition = (current.competitions ?? []).find((item) => item.id === competitionId);
+      return {
+        ...current,
+        competitions: (current.competitions ?? []).filter((item) => item.id !== competitionId),
+        feed: competition
+          ? [`${current.user.username} apagou mini competicao: ${competition.title}`, ...current.feed].slice(0, 12)
+          : current.feed
+      };
+    });
+  }
+
   return (
     <main className="min-h-screen bg-black text-white">
       <div className="noise" />
@@ -356,6 +369,7 @@ function Dashboard({ state, setState, onLogout }) {
               onCreate={createCompetition}
               onBet={betCompetition}
               onResolve={resolveCompetition}
+              onDelete={deleteCompetition}
             />
             <p className="mono-label">5. Incidents + Triggers Section</p>
             <IncidentArchive incidents={state.incidents} onRegister={registerIncident} />
