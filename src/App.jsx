@@ -290,7 +290,6 @@ function Dashboard({ state, setState, onLogout }) {
   const totalCoins = state.users.reduce((sum, user) => sum + (user.enfecoins ?? 0), 0);
   const totalTopics = state.users.reduce((sum, user) => sum + (productivity[user.id]?.completedTopics ?? 0), 0);
   const totalFiles = state.users.reduce((sum, user) => sum + (productivity[user.id]?.completedFiles ?? 0), 0);
-  const totalAssets = state.users.reduce((sum, user) => sum + (productivity[user.id]?.deliveredAssets ?? 0), 0);
   const topProducer = [...state.users].sort((a, b) => (productivity[b.id]?.completedTopics ?? 0) - (productivity[a.id]?.completedTopics ?? 0))[0];
 
   function createCompetition(data) {
@@ -494,8 +493,10 @@ function Dashboard({ state, setState, onLogout }) {
             currentFile: "",
             currentTask: "",
             estimateHours: 1,
+            targetTopics: 1,
             progress: 0,
             revisionStatus: "Em producao",
+            completedTopics: (stats.completedTopics ?? 0) + (Number(stats.targetTopics) || 1),
             completedFiles: (stats.completedFiles ?? 0) + 1,
             finishedAt,
             startedAt: null,
@@ -504,6 +505,7 @@ function Dashboard({ state, setState, onLogout }) {
                 id: makeId("completed-demand"),
                 file: stats.currentFile,
                 task: stats.currentTask,
+                topics: Number(stats.targetTopics) || 1,
                 progress: stats.progress,
                 startedAt: stats.startedAt,
                 finishedAt,
@@ -519,34 +521,12 @@ function Dashboard({ state, setState, onLogout }) {
             ].slice(0, 20)
           }
         },
-        feed: [`${current.user.username} finalizou a demanda em ${durationLabel}`, `Janela vencedora: ${winningWindow}`, ...current.feed].slice(0, 20)
-      };
-    });
-  }
-
-  function quickLog(type) {
-    const labels = {
-      topic: "concluiu 1 topico",
-      file: "finalizou 1 arquivo",
-      asset: "entregou 1 asset",
-      water: "bebeu 250ml de agua"
-    };
-    setState((current) => {
-      const stats = current.productivity?.[current.user.id] ?? {};
-      const nextStats = {
-        ...stats,
-        completedTopics: (stats.completedTopics ?? 0) + (type === "topic" ? 1 : 0),
-        completedFiles: (stats.completedFiles ?? 0) + (type === "file" ? 1 : 0),
-        deliveredAssets: (stats.deliveredAssets ?? 0) + (type === "asset" ? 1 : 0),
-        waterMl: (stats.waterMl ?? 0) + (type === "water" ? 250 : 0),
-        updatedAt: new Date().toISOString()
-      };
-      return {
-        ...current,
-        productivity: { ...(current.productivity ?? {}), [current.user.id]: nextStats },
-        marketHeat: clamp(current.marketHeat + 2),
-        graph: [...current.graph.slice(1), clamp((current.marketHeat ?? 0) + 8)],
-        feed: [`${current.user.username} ${labels[type]}`, ...current.feed].slice(0, 20)
+        feed: [
+          `${current.user.username} finalizou a demanda em ${durationLabel}`,
+          `${current.user.username} concluiu ${Number(stats.targetTopics) || 1} topicos`,
+          `Janela vencedora: ${winningWindow}`,
+          ...current.feed
+        ].slice(0, 20)
       };
     });
   }
@@ -577,7 +557,7 @@ function Dashboard({ state, setState, onLogout }) {
           <MetricCard label="Produtores Online" value={state.users.filter((user) => user.active).length} detail="ao vivo" />
           <MetricCard label="Topicos Concluidos" value={totalTopics} detail="equipe" />
           <MetricCard label="Arquivos Finalizados" value={totalFiles} detail="entregas" />
-          <MetricCard label="Assets Entregues" value={totalAssets} detail="criativos" />
+          <MetricCard label="Demandas Ativas" value={state.users.filter((user) => productivity[user.id]?.startedAt).length} detail="agora" />
           <MetricCard label="Lider Atual" value={topProducer?.username ?? "--"} detail="ranking" />
           <MetricCard label="ENFECOINS" value={totalCoins} detail="ficticios" />
         </div>
@@ -591,7 +571,6 @@ function Dashboard({ state, setState, onLogout }) {
             productivity={productivity}
             onUpdate={updateProductivity}
             onStart={startDemand}
-            onQuickLog={quickLog}
             onComplete={completeDemand}
           />
           <CompletedDemands user={state.user} productivity={productivity} />

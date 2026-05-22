@@ -1,11 +1,21 @@
 import { useEffect, useState } from "react";
 
-export function ProductivityPanel({ user, productivity, onUpdate, onStart, onQuickLog, onComplete }) {
+function formatElapsed(startedAt, now) {
+  if (!startedAt) return "00:00:00";
+  const totalSeconds = Math.max(0, Math.floor((now - new Date(startedAt).getTime()) / 1000));
+  const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  return `${hours}:${minutes}:${seconds}`;
+}
+
+export function ProductivityPanel({ user, productivity, onUpdate, onStart, onComplete }) {
   const current = productivity[user.id] ?? {
     currentFile: "",
     currentTask: "",
     progress: 0,
     estimateHours: 1,
+    targetTopics: 1,
     completedTopics: 0,
     completedFiles: 0,
     deliveredAssets: 0,
@@ -15,6 +25,13 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onQui
 
   const [draft, setDraft] = useState(current);
   const isStarted = Boolean(current.startedAt);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (!isStarted) return undefined;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [isStarted]);
 
   useEffect(() => {
     setDraft(current);
@@ -23,6 +40,7 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onQui
     current.currentTask,
     current.progress,
     current.estimateHours,
+    current.targetTopics,
     current.revisionStatus
   ]);
 
@@ -37,6 +55,10 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onQui
           <p className="eyebrow">Comece por aqui</p>
           <h2>Meu Trabalho Agora</h2>
           <p className="helper-copy">Atualize o que voce esta fazendo. Isso alimenta ranking, odds e feed ao vivo.</p>
+        </div>
+        <div className="timer-card">
+          <span>Cronometro</span>
+          <strong>{formatElapsed(current.startedAt, now)}</strong>
         </div>
       </div>
 
@@ -56,10 +78,15 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onQui
           <input type="number" min="0.25" step="0.25" value={draft.estimateHours} onChange={(e) => update("estimateHours", Number(e.target.value))} />
           <small>Exemplo: 0.5 = meia hora, 2 = duas horas.</small>
         </label>
+        <label>
+          Quantos topicos serao terminados?
+          <input type="number" min="1" value={draft.targetTopics} onChange={(e) => update("targetTopics", Number(e.target.value) || 1)} />
+          <small>Use para planejar a demanda atual.</small>
+        </label>
         <div className="creator-wide">
           <span className="field-title">Status de revisao</span>
           <div className="choice-grid">
-            {["Em producao", "Em revisao", "Aguardando feedback", "Pronto para exportar", "Entregue"].map((status) => (
+            {["Em producao", "Em revisao"].map((status) => (
               <button className={draft.revisionStatus === status ? "choice active" : "choice"} type="button" key={status} onClick={() => update("revisionStatus", status)}>
                 {status}
               </button>
@@ -79,12 +106,6 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onQui
         {isStarted ? <small>Demanda em andamento desde que foi iniciada.</small> : <small>Preencha material e tarefa para iniciar.</small>}
       </div>
 
-      <div className="quick-actions secondary-actions">
-        <span className="field-title">Registrar extras</span>
-        <button type="button" onClick={() => onQuickLog("topic")}>+ Topico concluido</button>
-        <button type="button" onClick={() => onQuickLog("asset")}>+ Asset entregue</button>
-        <button type="button" onClick={() => onQuickLog("water")}>+ 250ml agua</button>
-      </div>
     </section>
   );
 }
@@ -151,6 +172,7 @@ export function CompletedDemands({ user, productivity }) {
             <article key={item.id} className="completed-item">
               <strong>{item.file || "Demanda sem nome"}</strong>
               <p>{item.task || "Tarefa nao informada"}</p>
+              <p>{item.topics ?? 1} topicos planejados/concluidos</p>
               <span>{item.finishedAtLabel}</span>
               <em>Tempo gasto: {item.durationLabel}</em>
             </article>
