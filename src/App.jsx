@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ChatPanel } from "./components/ChatPanel";
-import { Graph } from "./components/Graph";
 import { Leaderboard } from "./components/Leaderboard";
 import { LiveFeed } from "./components/LiveFeed";
 import { MetricCard } from "./components/MetricCard";
 import { DemandBetting, classifyFinishWindow } from "./components/DemandBetting";
 import { ProductivityPanel, TeamProgress } from "./components/ProductivityPanel";
-import { categories, challengeTypes, rankFor, starterCompetitions, weekendEvents } from "./data/enfe";
+import { categories, challengeTypes, rankFor } from "./data/enfe";
 import { loadCloudState, saveCloudState, subscribeCloudState, toCloudState } from "./lib/cloudState";
 import { clamp, emptyState, loadState, makeId, resetCrybetStorage, saveState } from "./lib/storage";
 import { backendMode, supabase } from "./lib/supabaseClient";
@@ -531,13 +530,14 @@ function Dashboard({ state, setState, onLogout }) {
           <MetricCard label="Topicos Concluidos" value={totalTopics} detail="equipe" />
           <MetricCard label="Arquivos Finalizados" value={totalFiles} detail="entregas" />
           <MetricCard label="Assets Entregues" value={totalAssets} detail="criativos" />
-          <MetricCard label="Top Produtor" value={topProducer?.username ?? "--"} detail="ranking" />
+          <MetricCard label="Lider Atual" value={topProducer?.username ?? "--"} detail="ranking" />
           <MetricCard label="ENFECOINS" value={totalCoins} detail="ficticios" />
         </div>
       </section>
 
       <div className="dashboard-grid">
         <div className="main-stack">
+          <Leaderboard users={state.users} />
           <ProductivityPanel user={state.user} productivity={productivity} onUpdate={updateProductivity} onQuickLog={quickLog} onComplete={completeDemand} />
           <TeamProgress users={state.users} productivity={productivity} />
           <DemandBetting
@@ -547,64 +547,6 @@ function Dashboard({ state, setState, onLogout }) {
             finishBets={state.finishBets ?? []}
             onBet={placeFinishBet}
           />
-
-          <section className="section-card secondary-section">
-            <div className="section-head">
-              <div>
-                <p className="eyebrow">Opcional</p>
-                <h2>Outros Desafios da Equipe</h2>
-                <p className="helper-copy">Use apenas quando quiser criar uma brincadeira diferente. A aposta principal agora e por demanda atual.</p>
-              </div>
-              <span>{activeCompetitions.length} ativos</span>
-            </div>
-            <CompetitionCreator users={state.users} onCreate={createCompetition} />
-            {!state.competitions.length ? (
-              <div className="template-grid">
-                {starterCompetitions.map((item) => (
-                  <button
-                    key={item.title}
-                    type="button"
-                    className="template-card"
-                    onClick={() => createCompetition({ ...item, options: item.options.map((label, index) => ({ id: `option-${index + 1}`, label })) })}
-                  >
-                    <span>{item.challengeType}</span>
-                    <strong>{item.title}</strong>
-                    <p>{item.description}</p>
-                  </button>
-                ))}
-              </div>
-            ) : null}
-            <div className="competition-list">
-              {state.competitions.map((competition) => (
-                <CompetitionCard
-                  key={competition.id}
-                  competition={competition}
-                  user={userProfile}
-                  users={state.users}
-                  productivity={productivity}
-                  onBet={betCompetition}
-                  onResolve={resolveCompetition}
-                  onDelete={deleteCompetition}
-                />
-              ))}
-            </div>
-          </section>
-
-          <section className="section-card">
-            <p className="eyebrow">Eventos editoriais de fim de semana</p>
-            <h2>Sprints Criativos</h2>
-            <div className="weekend-grid">
-              {weekendEvents.map((event) => (
-                <article key={`${event.day}-${event.title}`} className="event-card">
-                  <span>{event.day}</span>
-                  <h3>{event.title}</h3>
-                  <p>{event.description}</p>
-                  <strong>{event.status}</strong>
-                </article>
-              ))}
-            </div>
-          </section>
-
           <WhoBetWhat users={state.users} competitions={state.competitions} />
           <ChatPanel user={state.user} users={state.users} messages={state.chatMessages} onSend={sendChatMessage} />
         </div>
@@ -629,19 +571,7 @@ function Dashboard({ state, setState, onLogout }) {
             </div>
           </section>
 
-          <section className="section-card">
-            <p className="eyebrow">Pulso produtivo ao vivo</p>
-            <h2>Mercado Criativo</h2>
-            <Graph data={state.graph} />
-            <div className="market-stats">
-              <span>Volatilidade {state.volatility}%</span>
-              <span>Fluxo {state.totalCoinFlow} ENFECOINS</span>
-              <span>Em alta {state.topEvent}</span>
-            </div>
-          </section>
-
           <LiveFeed feed={state.feed.length ? state.feed : ["Sprint editorial esta ao vivo"]} />
-          <Leaderboard users={state.users} />
         </aside>
       </div>
     </main>

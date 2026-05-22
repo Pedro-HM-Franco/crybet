@@ -750,6 +750,45 @@ input:focus, textarea:focus, select:focus {
   font-weight: 900;
   text-transform: uppercase;
 }
+.champion-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid rgba(103, 232, 249, 0.34);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(103, 232, 249, 0.16), transparent 18rem),
+    linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.035));
+}
+.champion-crown {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--green), var(--cyan));
+  color: #020617;
+  font-size: 1.55rem;
+  font-weight: 950;
+}
+.champion-card h3 {
+  margin: 4px 0;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: .9;
+}
+.champion-card span {
+  color: var(--muted);
+  font-weight: 800;
+}
+.champion-card > strong {
+  color: var(--green);
+  font-size: clamp(1.35rem, 3vw, 2.4rem);
+  text-align: right;
+}
 .leaderboard-panel h3 { margin: 0 0 12px; }
 .leaderboard-panel {
   background: rgba(2, 6, 23, 0.28);
@@ -817,4 +856,11 @@ input:focus, textarea:focus, select:focus {
   .login-card h1, .hero-section h1 { font-size: 4rem; }
   .nav-stats { width: 100%; }
   .nav-stats span { flex: 1; text-align: center; }
+  .champion-card {
+    grid-template-columns: auto 1fr;
+  }
+  .champion-card > strong {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
 }

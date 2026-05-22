@@ -31,6 +31,26 @@ export function Leaderboard({ users }) {
         <h2>Ranking ENFE</h2>
         <span>{users.length} jogadores</span>
       </div>
+      {richest[0] ? (
+        <div className="champion-card">
+          <div className="champion-crown">#1</div>
+          <div className="avatar large">{richest[0].avatar}</div>
+          <div>
+            <p className="eyebrow">Lider atual</p>
+            <h3>{richest[0].username}</h3>
+            <span>{rankFor(richest[0])}</span>
+          </div>
+          <strong>{richest[0].enfecoins ?? 0} ENFECOINS</strong>
+        </div>
+      ) : (
+        <div className="champion-card">
+          <div className="champion-crown">#1</div>
+          <div>
+            <p className="eyebrow">Lider atual</p>
+            <h3>Aguardando jogadores</h3>
+          </div>
+        </div>
+      )}
       <div className="leaderboards">
         {boards.map((board) => (
           <div className="leaderboard-panel" key={board.title}>
