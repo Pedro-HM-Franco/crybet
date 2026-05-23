@@ -293,6 +293,31 @@ async function upsertRows(table, rows) {
   if (error) throw error;
 }
 
+function isAfter(left, right) {
+  const leftTime = left ? new Date(left).getTime() : 0;
+  const rightTime = right ? new Date(right).getTime() : 0;
+  return leftTime > rightTime;
+}
+
+async function upsertUserRows(rows) {
+  if (!rows.length) return;
+
+  const ids = rows.map((row) => row.id);
+  const { data, error } = await supabase.from("enfe_users").select("*").in("id", ids);
+  if (error) throw error;
+
+  const existingById = new Map((data ?? []).map((row) => [row.id, row]));
+  const mergedRows = rows.map((row) => {
+    const existing = existingById.get(row.id);
+    if (existing && isAfter(existing.updated_at, row.updated_at)) {
+      return existing;
+    }
+    return row;
+  });
+
+  await upsertRows("enfe_users", mergedRows);
+}
+
 const finishBetStatusRank = {
   active: 1,
   expired: 2,
@@ -366,7 +391,7 @@ export async function saveCloudState(state) {
     active: user.active ?? false,
     rank: user.rank,
     created_at: isoOrNull(user.createdAt) ?? now,
-    updated_at: now
+    updated_at: isoOrNull(user.updatedAt) ?? now
   }));
 
   const productivityRows = Object.entries(productivity).map(([userId, stats]) => cleanUndefined({
@@ -492,7 +517,7 @@ export async function saveCloudState(state) {
   );
 
   try {
-    await upsertRows("enfe_users", userRows);
+    await upsertUserRows(userRows);
     await Promise.all([
       supabase.from("enfe_app_meta").upsert({
         id: LEGACY_ROW_ID,

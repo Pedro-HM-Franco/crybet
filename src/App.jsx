@@ -24,6 +24,10 @@ function completedDemandId(userId, startedAt) {
   return Number.isNaN(startedTime) ? makeId("completed-demand") : `completed-demand-${userId}-${startedTime}`;
 }
 
+function updateUserRecord(user, updates = {}) {
+  return { ...user, ...updates, updatedAt: new Date().toISOString() };
+}
+
 function betMatchesCurrentDemand(bet, productivity) {
   const targetStartedAt = productivity?.[bet.targetUserId]?.startedAt;
   if (!targetStartedAt || !bet.createdAt) return false;
@@ -390,7 +394,11 @@ function Dashboard({ state, setState, onLogout }) {
   const totalCoins = state.users.reduce((sum, user) => sum + (user.enfecoins ?? 0), 0);
   const totalTopics = state.users.reduce((sum, user) => sum + (productivity[user.id]?.completedTopics ?? 0), 0);
   const totalFiles = state.users.reduce((sum, user) => sum + (productivity[user.id]?.completedFiles ?? 0), 0);
-  const topProducer = [...state.users].sort((a, b) => (productivity[b.id]?.completedTopics ?? 0) - (productivity[a.id]?.completedTopics ?? 0))[0];
+  const topProducer = [...state.users].sort((a, b) => {
+    const coinDiff = Number(b.enfecoins ?? 0) - Number(a.enfecoins ?? 0);
+    if (coinDiff) return coinDiff;
+    return (b.completedDemands ?? 0) - (a.completedDemands ?? 0);
+  })[0];
 
   function createCompetition(data) {
     const competition = {
@@ -429,9 +437,9 @@ function Dashboard({ state, setState, onLogout }) {
       };
       return {
         ...current,
-        user: { ...current.user, enfecoins: current.user.enfecoins - amount },
+        user: updateUserRecord(current.user, { enfecoins: current.user.enfecoins - amount }),
         users: current.users.map((user) =>
-          user.id === current.user.id ? { ...user, enfecoins: (user.enfecoins ?? 0) - amount } : user
+          user.id === current.user.id ? updateUserRecord(user, { enfecoins: (user.enfecoins ?? 0) - amount }) : user
         ),
         competitions: current.competitions.map((item) => item.id === competitionId ? { ...item, bets: [...item.bets, bet] } : item),
         volatility: clamp(current.volatility + 2),
@@ -461,7 +469,7 @@ function Dashboard({ state, setState, onLogout }) {
           bestOddsWon: won ? Math.max(user.bestOddsWon ?? 0, bet.odds) : user.bestOddsWon ?? 0,
           winstreak: won ? (user.winstreak ?? 0) + 1 : 0
         };
-        return { ...next, rank: rankFor(next) };
+        return updateUserRecord(next, { rank: rankFor(next) });
       });
       return {
         ...current,
@@ -658,7 +666,7 @@ function Dashboard({ state, setState, onLogout }) {
         const refund = activeBets
           .filter((bet) => bet.bettorId === user.id)
           .reduce((sum, bet) => sum + Number(bet.amount ?? 0), 0);
-        return refund ? { ...user, enfecoins: (user.enfecoins ?? 0) + refund } : user;
+        return refund ? updateUserRecord(user, { enfecoins: (user.enfecoins ?? 0) + refund }) : user;
       });
 
       return {
@@ -726,8 +734,8 @@ function Dashboard({ state, setState, onLogout }) {
       };
       return {
         ...current,
-        user: { ...current.user, username: bettor.username, enfecoins: currentBalance - betAmount },
-        users: current.users.map((user) => user.id === bettor.id ? { ...user, enfecoins: currentBalance - betAmount } : user),
+        user: updateUserRecord(current.user, { username: bettor.username, enfecoins: currentBalance - betAmount }),
+        users: current.users.map((user) => user.id === bettor.id ? updateUserRecord(user, { enfecoins: currentBalance - betAmount }) : user),
         finishBets: [...(current.finishBets ?? []), bet],
         totalCoinFlow: current.totalCoinFlow + betAmount,
         feed: [`${bettor.username} acreditou em ${target.username}`, ...current.feed].slice(0, 20)
@@ -790,14 +798,13 @@ function Dashboard({ state, setState, onLogout }) {
         const reward = wonBets.reduce((sum, bet) => sum + Math.round(bet.amount * bet.odds), 0);
         const productionBonus = user.id === current.user.id ? producerBonus : 0;
         if (!reward && !productionBonus && user.id !== current.user.id) return user;
-        return {
-          ...user,
+        return updateUserRecord(user, {
           enfecoins: (user.enfecoins ?? 0) + reward + productionBonus,
           wins: (user.wins ?? 0) + (reward ? wonBets.length : 0),
           completedDemands: (user.completedDemands ?? 0) + (user.id === current.user.id ? 1 : 0),
           totalWon: (user.totalWon ?? 0) + reward + productionBonus,
           speedBonusWon: (user.speedBonusWon ?? 0) + productionBonus
-        };
+        });
       });
       return {
         ...current,
@@ -871,8 +878,8 @@ function Dashboard({ state, setState, onLogout }) {
     if (!clean || clean.length < 2) return;
     setState((current) => ({
       ...current,
-      user: { ...current.user, username: clean },
-      users: current.users.map((user) => user.id === current.user.id ? { ...user, username: clean } : user),
+      user: updateUserRecord(current.user, { username: clean }),
+      users: current.users.map((user) => user.id === current.user.id ? updateUserRecord(user, { username: clean }) : user),
       finishBets: (current.finishBets ?? []).map((bet) => ({
         ...bet,
         bettorName: bet.bettorId === current.user.id ? clean : bet.bettorName,
@@ -1025,7 +1032,7 @@ export default function App() {
   }, [state]);
 
   function activateUser(profile, label) {
-    const activeProfile = { ...profile, enfecoins: profile.enfecoins ?? 50, active: true, rank: rankFor(profile) };
+    const activeProfile = updateUserRecord(profile, { enfecoins: profile.enfecoins ?? 50, active: true, rank: rankFor(profile) });
     setState((current) => ({
       ...current,
       user: activeProfile,
@@ -1056,7 +1063,7 @@ export default function App() {
     setState((current) => ({
       ...current,
       user: null,
-      users: current.users.map((user) => user.id === current.user?.id ? { ...user, active: false } : user)
+      users: current.users.map((user) => user.id === current.user?.id ? updateUserRecord(user, { active: false }) : user)
     }));
   }
 

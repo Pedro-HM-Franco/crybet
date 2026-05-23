@@ -1,7 +1,15 @@
 import { rankFor } from "../data/enfe";
 
+function coinsFor(user) {
+  return Number(user.enfecoins ?? 0);
+}
+
 export function Leaderboard({ users }) {
-  const richest = [...users].sort((a, b) => (b.enfecoins ?? 0) - (a.enfecoins ?? 0));
+  const richest = [...users].sort((a, b) => {
+    const coinDiff = coinsFor(b) - coinsFor(a);
+    if (coinDiff) return coinDiff;
+    return (b.completedDemands ?? 0) - (a.completedDemands ?? 0);
+  });
   const bestPredictors = [...users].sort((a, b) => {
     const aTotal = (a.wins ?? 0) + (a.losses ?? 0);
     const bTotal = (b.wins ?? 0) + (b.losses ?? 0);
@@ -13,7 +21,7 @@ export function Leaderboard({ users }) {
   const mostDemands = [...users].sort((a, b) => (b.completedDemands ?? 0) - (a.completedDemands ?? 0));
 
   const boards = [
-    { title: "Mais Ricos", users: richest, metric: (user) => `${user.enfecoins ?? 0} ENFECOINS` },
+    { title: "Mais Ricos", users: richest, metric: (user) => `${coinsFor(user)} ENFECOINS` },
     {
       title: "Melhores Palpiteiros",
       users: bestPredictors,
@@ -42,7 +50,7 @@ export function Leaderboard({ users }) {
             <h3>{richest[0].username}</h3>
             <span>{rankFor(richest[0])}</span>
           </div>
-          <strong>{richest[0].enfecoins ?? 0} ENFECOINS</strong>
+          <strong>{coinsFor(richest[0])} ENFECOINS</strong>
         </div>
       ) : (
         <div className="champion-card">
