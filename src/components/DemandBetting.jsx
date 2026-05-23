@@ -71,6 +71,7 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
   const [amount, setAmount] = useState(5);
   const [customHours, setCustomHours] = useState(1);
   const [customMinutes, setCustomMinutes] = useState(0);
+  const balance = Math.max(0, Number(user.enfecoins ?? 0));
 
   useEffect(() => {
     const targetStillExists = productiveUsers.some((item) => item.id === targetId);
@@ -78,6 +79,14 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
       setTargetId(productiveUsers[0]?.id ?? "");
     }
   }, [productiveUsers, targetId]);
+
+  useEffect(() => {
+    setAmount((current) => {
+      const value = Math.max(1, Number(current) || 1);
+      if (balance <= 0) return 1;
+      return Math.min(value, balance);
+    });
+  }, [balance]);
 
   const target = users.find((item) => item.id === targetId);
   const targetStats = productivity[targetId] ?? {};
@@ -92,9 +101,16 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
       isBetForCurrentDemand(bet, targetStats.startedAt)
   );
   const customTotalMinutes = Number(customHours || 0) * 60 + Number(customMinutes || 0);
-  const balance = user.enfecoins ?? 0;
   const customId = customWindowId(customTotalMinutes);
   const customOdds = windowOdds({ windowId: customId, bets: activeBets, targetProgress: targetStats.progress ?? 0 });
+  const canBet = Boolean(targetId) && balance >= amount && amount > 0;
+  const disabledReason = !targetId
+    ? "Escolha uma pessoa com demanda ativa."
+    : balance <= 0
+      ? "Você está sem ENFECOINS para acreditar agora."
+      : balance < amount
+        ? `Seu saldo é ${balance} ENFECOINS. Diminua o valor.`
+        : "";
 
   const odds = useMemo(() => {
     return finishWindows.reduce((acc, item) => {
@@ -129,7 +145,14 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
             </label>
             <label>
               ENFECOINS
-              <input type="number" min="1" max={balance} value={amount} onChange={(event) => setAmount(Number(event.target.value) || 1)} />
+              <input
+                type="number"
+                min="1"
+                max={Math.max(balance, 1)}
+                value={amount}
+                onChange={(event) => setAmount(Math.max(1, Number(event.target.value) || 1))}
+              />
+              <small>Saldo: {balance} ENFECOINS</small>
             </label>
           </div>
 
@@ -169,13 +192,14 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
             </div>
           ) : (
             <>
+              {disabledReason ? <p className="muted-note">{disabledReason}</p> : null}
               <div className="finish-window-grid">
                 {finishWindows.map((item) => (
                   <button
                     className="finish-window-card"
                     type="button"
                     key={item.id}
-                    disabled={!targetId || balance < amount}
+                    disabled={!canBet}
                     onClick={() => onBet({ targetUserId: targetId, windowId: item.id, windowLabel: item.label, amount, odds: odds[item.id] })}
                   >
                     <span>{item.helper}</span>
@@ -200,7 +224,7 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
                 </label>
                 <button
                   type="button"
-                  disabled={!targetId || balance < amount || customTotalMinutes <= 0}
+                  disabled={!canBet || customTotalMinutes <= 0}
                   onClick={() =>
                     onBet({
                       targetUserId: targetId,
