@@ -844,6 +844,35 @@ input:focus, textarea:focus, select:focus {
   font-style: normal;
   font-weight: 900;
 }
+.speed-bonus {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid rgba(74, 222, 128, 0.26);
+  border-radius: 12px;
+  background: rgba(74, 222, 128, 0.1);
+}
+.speed-bonus span,
+.speed-bonus strong,
+.speed-bonus small {
+  display: block;
+}
+.speed-bonus span {
+  color: var(--muted);
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.speed-bonus strong {
+  margin-top: 3px;
+  color: var(--green);
+}
+.speed-bonus small,
+.muted-note {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: .76rem;
+}
 
 .graph-canvas {
   position: relative;

@@ -471,6 +471,16 @@ function Dashboard({ state, setState, onLogout }) {
     return `${minutes}min`;
   }
 
+  function calculateEarlyBonus(stats, finishedAt) {
+    const estimateMinutes = Math.max(0, Number(stats.estimateHours || 0) * 60);
+    const start = stats.startedAt ? new Date(stats.startedAt).getTime() : new Date(finishedAt).getTime();
+    const end = new Date(finishedAt).getTime();
+    const actualMinutes = Math.max(0, Math.round((end - start) / 60000));
+    const savedMinutes = Math.max(0, Math.round(estimateMinutes - actualMinutes));
+    const bonus = savedMinutes > 0 ? Math.max(1, Math.round(savedMinutes / 5)) : 0;
+    return { estimateMinutes, actualMinutes, savedMinutes, bonus };
+  }
+
   function placeFinishBet({ targetUserId, windowId, windowLabel, amount, odds }) {
     setState((current) => {
       const target = current.users.find((user) => user.id === targetUserId);
@@ -509,6 +519,7 @@ function Dashboard({ state, setState, onLogout }) {
       const finishedAt = new Date().toISOString();
       const winningWindow = classifyFinishWindow(stats.startedAt, finishedAt);
       const durationLabel = formatDuration(stats.startedAt, finishedAt);
+      const early = calculateEarlyBonus(stats, finishedAt);
       const finishBets = (current.finishBets ?? []).map((bet) =>
         bet.targetUserId === current.user.id && bet.status === "active"
           ? { ...bet, status: "resolved", winningWindow, won: didFinishBetWin(bet, stats.startedAt, finishedAt), resolvedAt: finishedAt }
@@ -517,13 +528,15 @@ function Dashboard({ state, setState, onLogout }) {
       const users = current.users.map((user) => {
         const wonBets = finishBets.filter((bet) => bet.bettorId === user.id && bet.resolvedAt === finishedAt && bet.won);
         const reward = wonBets.reduce((sum, bet) => sum + Math.round(bet.amount * bet.odds), 0);
-        if (!reward && user.id !== current.user.id) return user;
+        const earlyBonus = user.id === current.user.id ? early.bonus : 0;
+        if (!reward && !earlyBonus && user.id !== current.user.id) return user;
         return {
           ...user,
-          enfecoins: (user.enfecoins ?? 0) + reward,
+          enfecoins: (user.enfecoins ?? 0) + reward + earlyBonus,
           wins: (user.wins ?? 0) + (reward ? wonBets.length : 0),
           completedDemands: (user.completedDemands ?? 0) + (user.id === current.user.id ? 1 : 0),
-          totalWon: (user.totalWon ?? 0) + reward
+          totalWon: (user.totalWon ?? 0) + reward + earlyBonus,
+          speedBonusWon: (user.speedBonusWon ?? 0) + earlyBonus
         };
       });
       return {
@@ -554,6 +567,10 @@ function Dashboard({ state, setState, onLogout }) {
                 progress: stats.progress,
                 startedAt: stats.startedAt,
                 finishedAt,
+                estimateMinutes: early.estimateMinutes,
+                actualMinutes: early.actualMinutes,
+                savedMinutes: early.savedMinutes,
+                speedBonus: early.bonus,
                 finishedAtLabel: new Intl.DateTimeFormat("pt-BR", {
                   day: "2-digit",
                   month: "2-digit",
@@ -567,6 +584,7 @@ function Dashboard({ state, setState, onLogout }) {
           }
         },
         feed: [
+          early.bonus ? `${current.user.username} ganhou ${early.bonus} ENFECOINS por terminar antes do tempo` : `${current.user.username} terminou sem bonus de velocidade`,
           `${current.user.username} finalizou a demanda em ${durationLabel}`,
           `${current.user.username} concluiu ${Number(stats.targetTopics) || 1} topicos`,
           `Janela vencedora: ${winningWindow}`,
@@ -660,6 +678,7 @@ function Dashboard({ state, setState, onLogout }) {
               <span>Derrotas {userProfile.losses ?? 0}</span>
               <span>Winstreak {userProfile.winstreak ?? 0}</span>
               <span>Melhor odd x{userProfile.bestOddsWon ?? 0}</span>
+              <span>Bonus velocidade {money(userProfile.speedBonusWon ?? 0)}</span>
               <span>Favorito {userProfile.favoriteCompetition ?? "Sprint Editorial"}</span>
             </div>
           </section>

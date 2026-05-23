@@ -9,6 +9,14 @@ function formatElapsed(startedAt, now) {
   return `${hours}:${minutes}:${seconds}`;
 }
 
+function formatMinutes(totalMinutes = 0) {
+  const minutes = Math.max(0, Math.round(totalMinutes));
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours}h ${rest}min` : `${hours}h`;
+}
+
 export function ProductivityPanel({ user, productivity, onUpdate, onStart, onComplete }) {
   const current = productivity[user.id] ?? {
     currentFile: "",
@@ -175,6 +183,15 @@ export function CompletedDemands({ user, productivity }) {
               <p>{item.topics ?? 1} topicos planejados/concluidos</p>
               <span>{item.finishedAtLabel}</span>
               <em>Tempo gasto: {item.durationLabel}</em>
+              {item.speedBonus ? (
+                <div className="speed-bonus">
+                  <span>Bonus de velocidade</span>
+                  <strong>+{item.speedBonus} ENFECOINS</strong>
+                  <small>{formatMinutes(item.savedMinutes)} antes do combinado</small>
+                </div>
+              ) : (
+                <small className="muted-note">Sem bonus: terminou no tempo marcado ou depois.</small>
+              )}
             </article>
           ))}
         </div>
