@@ -24,6 +24,21 @@ function formatMinutes(totalMinutes = 0) {
   return rest ? `${hours}h ${rest}min` : `${hours}h`;
 }
 
+function deadlineInfo(stats, now) {
+  const estimateMinutes = Math.max(1, Number(stats.estimateHours || 0) * 60);
+  const workedMinutesValue = workedMilliseconds(stats, now) / 60000;
+  const percent = Math.round((workedMinutesValue / estimateMinutes) * 100);
+  const overdueMinutes = Math.max(0, workedMinutesValue - estimateMinutes);
+  return {
+    percent,
+    width: Math.min(100, percent),
+    overdue: overdueMinutes > 0,
+    workedLabel: formatMinutes(workedMinutesValue),
+    estimateLabel: formatMinutes(estimateMinutes),
+    overdueLabel: formatMinutes(overdueMinutes)
+  };
+}
+
 export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPause, onResume, onComplete }) {
   const current = productivity[user.id] ?? {
     currentFile: "",
@@ -35,7 +50,7 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPau
     completedFiles: 0,
     deliveredAssets: 0,
     waterMl: 0,
-    revisionStatus: "Em producao"
+    revisionStatus: "Em produção"
   };
 
   const [draft, setDraft] = useState(current);
@@ -70,10 +85,10 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPau
         <div>
           <p className="eyebrow">Comece por aqui</p>
           <h2>Meu Trabalho Agora</h2>
-          <p className="helper-copy">Atualize o que voce esta fazendo. Isso alimenta ranking, odds e feed ao vivo.</p>
+          <p className="helper-copy">Atualize o que você está fazendo. Isso alimenta ranking, odds e feed ao vivo.</p>
         </div>
         <div className="timer-card">
-          <span>{isPaused ? "Pausado" : "Cronometro"}</span>
+          <span>{isPaused ? "Pausado" : "Cronômetro"}</span>
           <strong>{formatElapsed(current, now)}</strong>
         </div>
       </div>
@@ -81,13 +96,13 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPau
       <div className="productivity-form">
         <label>
           Material atual
-          <input value={draft.currentFile} onChange={(e) => update("currentFile", e.target.value)} placeholder="Ex: Banner Instagram, PDF final, apresentacao" />
-          <small>Qual material voce esta produzindo agora.</small>
+          <input value={draft.currentFile} onChange={(e) => update("currentFile", e.target.value)} placeholder="Ex: Banner Instagram, PDF final, apresentação" />
+          <small>Qual material você está produzindo agora.</small>
         </label>
         <label>
           O que estou fazendo
-          <input value={draft.currentTask} onChange={(e) => update("currentTask", e.target.value)} placeholder="Ex: diagramação, revisao, exportacao, ajustes" />
-          <small>O que voce esta fazendo dentro desse arquivo.</small>
+          <input value={draft.currentTask} onChange={(e) => update("currentTask", e.target.value)} placeholder="Ex: diagramação, revisão, exportação, ajustes" />
+          <small>O que você está fazendo dentro desse arquivo.</small>
         </label>
         <label>
           Falta quanto tempo? (horas)
@@ -95,14 +110,14 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPau
           <small>Exemplo: 0.5 = meia hora, 2 = duas horas.</small>
         </label>
         <label>
-          Quantos topicos serao terminados?
+          Quantos tópicos serão terminados?
           <input type="number" min="1" value={draft.targetTopics} onChange={(e) => update("targetTopics", Number(e.target.value) || 1)} />
           <small>Use para planejar a demanda atual.</small>
         </label>
         <div className="creator-wide">
-          <span className="field-title">Status de revisao</span>
+          <span className="field-title">Status de revisão</span>
           <div className="choice-grid">
-            {["Em producao", "Em revisao"].map((status) => (
+            {["Em produção", "Em revisão"].map((status) => (
               <button className={draft.revisionStatus === status ? "choice active" : "choice"} type="button" key={status} onClick={() => update("revisionStatus", status)}>
                 {status}
               </button>
@@ -129,16 +144,16 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPau
         <button type="button" className="complete-button" onClick={onComplete} disabled={!isStarted}>
           Finalizar demanda
         </button>
-        {isPaused ? <small>Demanda pausada. O tempo parado nao entra no cronometro.</small> : null}
+        {isPaused ? <small>Demanda pausada. O tempo parado não entra no cronômetro.</small> : null}
         {isStarted && !isPaused ? <small>Demanda em andamento desde que foi iniciada.</small> : null}
         {!isStarted ? <small>Preencha material e tarefa para iniciar.</small> : null}
       </div>
-
     </section>
   );
 }
 
 export function TeamProgress({ users, productivity }) {
+  const [now, setNow] = useState(Date.now());
   const totals = users.reduce(
     (acc, user) => {
       const stats = productivity[user.id] ?? {};
@@ -151,20 +166,31 @@ export function TeamProgress({ users, productivity }) {
     { topics: 0, files: 0, assets: 0, water: 0 }
   );
 
+  useEffect(() => {
+    const hasActiveDemand = users.some((user) => {
+      const stats = productivity[user.id] ?? {};
+      return stats.startedAt && !stats.pausedAt;
+    });
+    if (!hasActiveDemand) return undefined;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [users, productivity]);
+
   return (
     <section className="section-card">
       <p className="eyebrow">Progresso coletivo ao vivo</p>
-      <h2>Central de Producao</h2>
+      <h2>Central de Produção</h2>
       <div className="team-totals">
-        <span>Topicos {totals.topics}</span>
+        <span>Tópicos {totals.topics}</span>
         <span>Arquivos {totals.files}</span>
         <span>Assets {totals.assets}</span>
-        <span>Agua {totals.water}ml</span>
+        <span>Água {totals.water}ml</span>
       </div>
       <div className="progress-grid">
         {!users.length ? <p className="empty-state">Nenhum produtor online ainda.</p> : null}
         {users.map((user) => {
           const stats = productivity[user.id] ?? {};
+          const deadline = stats.startedAt ? deadlineInfo(stats, now) : null;
           return (
             <article key={user.id} className="progress-card">
               <div className="avatar">{user.avatar}</div>
@@ -174,10 +200,16 @@ export function TeamProgress({ users, productivity }) {
                 <p>{stats.currentTask || "Aguardando tarefa"}</p>
                 {stats.startedAt ? <small>{stats.pausedAt ? "Pausado" : "Em andamento"}</small> : null}
               </div>
-              <div className="progress-bar">
-                <span style={{ width: `${stats.progress ?? 0}%` }} />
+              <div className={deadline?.overdue ? "progress-bar deadline overdue" : "progress-bar deadline"}>
+                <span style={{ width: `${deadline?.width ?? 0}%` }} />
               </div>
-              <small>{stats.progress ?? 0}% / {stats.revisionStatus ?? "Sem status"}</small>
+              <small className={deadline?.overdue ? "deadline-status overdue" : "deadline-status"}>
+                {deadline
+                  ? deadline.overdue
+                    ? `Tempo ultrapassado: ${deadline.overdueLabel} além do previsto`
+                    : `${deadline.percent}% do prazo usado (${deadline.workedLabel} de ${deadline.estimateLabel})`
+                  : `Sem demanda ativa / ${stats.revisionStatus ?? "Sem status"}`}
+              </small>
             </article>
           );
         })}
@@ -191,27 +223,27 @@ export function CompletedDemands({ user, productivity }) {
 
   return (
     <section className="section-card completed-demands">
-      <p className="eyebrow">Historico pessoal</p>
-      <h2>Demandas Concluidas</h2>
+      <p className="eyebrow">Histórico pessoal</p>
+      <h2>Demandas Concluídas</h2>
       {!history.length ? (
-        <p className="empty-state">Nenhuma demanda concluida ainda.</p>
+        <p className="empty-state">Nenhuma demanda concluída ainda.</p>
       ) : (
         <div className="completed-list">
           {history.slice(0, 8).map((item) => (
             <article key={item.id} className="completed-item">
               <strong>{item.file || "Demanda sem nome"}</strong>
-              <p>{item.task || "Tarefa nao informada"}</p>
-              <p>{item.topics ?? 1} topicos planejados/concluidos</p>
+              <p>{item.task || "Tarefa não informada"}</p>
+              <p>{item.topics ?? 1} tópicos planejados/concluídos</p>
               <span>{item.finishedAtLabel}</span>
               <em>Tempo gasto: {item.durationLabel}</em>
               {item.speedBonus ? (
                 <div className="speed-bonus">
-                  <span>Bonus de velocidade</span>
+                  <span>Bônus de velocidade</span>
                   <strong>+{item.speedBonus} ENFECOINS</strong>
                   <small>{formatMinutes(item.savedMinutes)} antes do combinado</small>
                 </div>
               ) : (
-                <small className="muted-note">Sem bonus: terminou no tempo marcado ou depois.</small>
+                <small className="muted-note">Sem bônus: terminou no tempo marcado ou depois.</small>
               )}
             </article>
           ))}

@@ -69,7 +69,7 @@ export function ChatPanel({ user, users, messages, onSend }) {
         <label className="mb-4 grid gap-2 font-mono text-xs uppercase">
           Escolher jogador
           <select className="input" value={recipientId} onChange={(event) => setRecipientId(event.target.value)}>
-            <option value="">Selecione alguem</option>
+            <option value="">Selecione alguém</option>
             {availableUsers.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.username} {item.active ? "(online)" : "(offline)"}

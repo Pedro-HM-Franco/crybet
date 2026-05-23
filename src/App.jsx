@@ -40,11 +40,11 @@ function Login({ users, onLogin, onRegister }) {
     if (!clean) return setMessage("Digite um nome de produtor.");
     const existing = users.find((user) => user.username.toLowerCase() === clean.toLowerCase());
     if (mode === "login") {
-      if (!existing) return setMessage("Produtor nao encontrado. Cadastre primeiro.");
+      if (!existing) return setMessage("Produtor não encontrado. Cadastre primeiro.");
       onLogin(existing);
       return;
     }
-    if (existing) return setMessage("Esse produtor ja existe. Use Entrar.");
+    if (existing) return setMessage("Esse produtor já existe. Use Entrar.");
     onRegister({ username: clean, avatar: (avatar.trim() || clean.charAt(0)).slice(0, 2).toUpperCase() });
   }
 
@@ -53,10 +53,10 @@ function Login({ users, onLogin, onRegister }) {
       <div className="arena-orb orb-a" />
       <div className="arena-orb orb-b" />
       <motion.section className="login-card" initial={false} animate={{ opacity: 1 }}>
-        <p className="eyebrow">Workspace criativo ficticio / ENFECOINS sem valor real</p>
+        <p className="eyebrow">Workspace criativo fictício / ENFECOINS sem valor real</p>
         <h1>ENFE 2026</h1>
         <p className="login-copy">
-          A arena editorial onde a equipe transforma arquivos, revisoes, entregas e desafios criativos em um jogo social.
+          A arena editorial onde a equipe transforma arquivos, revisões, entregas e desafios criativos em um jogo social.
         </p>
         <div className="segmented">
           <button className={mode === "login" ? "active" : ""} type="button" onClick={() => setMode("login")}>Entrar</button>
@@ -125,12 +125,12 @@ function CompetitionCreator({ users, onCreate }) {
   return (
     <form className="creator-card" onSubmit={submit}>
       <div>
-        <p className="eyebrow">Criar desafio rapido</p>
+        <p className="eyebrow">Criar desafio rápido</p>
         <h3>Novo desafio da equipe</h3>
-        <p className="helper-copy">Preencha o essencial. O ENFE transforma isso em uma competicao com ENFECOINS ficticios.</p>
+        <p className="helper-copy">Preencha o essencial. O ENFE transforma isso em uma competição com ENFECOINS fictícios.</p>
       </div>
       <label>
-        1. Qual e o desafio?
+        1. Qual é o desafio?
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Quem termina o arquivo primeiro?" />
       </label>
       <label>
@@ -142,7 +142,7 @@ function CompetitionCreator({ users, onCreate }) {
         <span className="field-title">3. Quem participa?</span>
         <small>Escolha pessoas cadastradas. Depois clique para gerar os palpites automaticamente.</small>
         <div className="choice-grid">
-          {!users.length ? <p className="empty-state">Nenhum usuario cadastrado ainda.</p> : null}
+          {!users.length ? <p className="empty-state">Nenhum usuário cadastrado ainda.</p> : null}
           {users.map((user) => {
             const active = selectedParticipants.some((item) => item.id === user.id);
             return (
@@ -153,7 +153,7 @@ function CompetitionCreator({ users, onCreate }) {
           })}
         </div>
         <button className="ghost-button" type="button" onClick={fillParticipantOptions} disabled={!selectedParticipants.length}>
-          Gerar opcoes com participantes
+          Gerar opções com participantes
         </button>
       </div>
 
@@ -169,13 +169,13 @@ function CompetitionCreator({ users, onCreate }) {
       </div>
 
       <label>
-        5. Duracao em horas
+        5. Duração em horas
         <input type="number" min="1" max="48" value={durationHours} onChange={(e) => setDurationHours(e.target.value)} />
       </label>
       <label>
         Recompensa
         <input type="number" value={reward} onChange={(e) => setReward(e.target.value)} placeholder="20" />
-        <small>Bonus ficticio pago ao vencedor.</small>
+        <small>Bônus fictício pago ao vencedor.</small>
       </label>
       <label>
         Entrada por palpite
@@ -183,9 +183,9 @@ function CompetitionCreator({ users, onCreate }) {
         <small>Valor sugerido em ENFECOINS.</small>
       </label>
       <label className="creator-wide">
-        6. Opcoes de palpite
-        <textarea value={options} onChange={(e) => setOptions(e.target.value)} placeholder="Uma opcao por linha. Ex: Pedro vence o desafio" />
-        <small>Se escolher participantes, voce pode gerar isso automaticamente.</small>
+        6. Opções de palpite
+        <textarea value={options} onChange={(e) => setOptions(e.target.value)} placeholder="Uma opção por linha. Ex: Pedro vence o desafio" />
+        <small>Se escolher participantes, você pode gerar isso automaticamente.</small>
       </label>
       <button type="submit">Criar desafio</button>
     </form>
@@ -210,7 +210,7 @@ function CompetitionCard({ competition, user, users, productivity, onBet, onReso
       <div className="competition-meta">
         <span>{competition.participants}</span>
         <span>{competition.timer || "Sprint ativo"}</span>
-        <span>Premio {pool + (competition.reward ?? 0)} ENFECOINS</span>
+        <span>Prêmio {pool + (competition.reward ?? 0)} ENFECOINS</span>
         <span>Entrada {competition.entryAmount ?? 0}</span>
         <span>{competition.endTime || "sem fim definido"}</span>
         <span>{competition.bets.length} palpites</span>
@@ -262,7 +262,7 @@ function WhoBetWhat({ users, competitions }) {
       <p className="eyebrow">Palpites criativos em tempo real</p>
       <h2>WHO BET WHAT</h2>
       <div className="social-grid">
-        {!bets.length ? <p className="empty-state">Nenhum palpite ainda. O sprint esta esperando.</p> : null}
+        {!bets.length ? <p className="empty-state">Nenhum palpite ainda. O sprint está esperando.</p> : null}
         {bets.slice(-12).reverse().map((bet) => {
           const user = users.find((item) => item.id === bet.userId);
           return (
@@ -296,13 +296,13 @@ function PlayerProfile({ user, onRename }) {
       <div className="profile-row">
         <div className="avatar large">{user.avatar}</div>
         <div>
-          <p className="eyebrow">Perfil do usuario</p>
+          <p className="eyebrow">Perfil do usuário</p>
           <h2>{user.username}</h2>
           <p>{rankFor(user)}</p>
         </div>
       </div>
       <button className="profile-edit-toggle" type="button" onClick={() => setOpen((value) => !value)}>
-        {open ? "Fechar edicao" : "Alterar nome"}
+        {open ? "Fechar edição" : "Alterar nome"}
       </button>
       {open ? (
         <form
@@ -362,7 +362,7 @@ function Dashboard({ state, setState, onLogout }) {
         userId: current.user.id,
         username: current.user.username,
         optionId,
-        optionLabel: option?.label ?? "Opcao",
+        optionLabel: option?.label ?? "Opção",
         amount,
         odds,
         confidence: Math.floor(55 + Math.random() * 44),
@@ -438,7 +438,7 @@ function Dashboard({ state, setState, onLogout }) {
           updatedAt: new Date().toISOString()
         }
       },
-      feed: [`${current.user.username} atualizou: ${draft.currentTask || "producao em andamento"}`, ...current.feed].slice(0, 20)
+      feed: [`${current.user.username} atualizou: ${draft.currentTask || "produção em andamento"}`, ...current.feed].slice(0, 20)
     }));
   }
 
@@ -451,7 +451,7 @@ function Dashboard({ state, setState, onLogout }) {
           ...(current.productivity?.[current.user.id] ?? {}),
           ...draft,
           progress: Number(draft.progress ?? 0),
-          revisionStatus: draft.revisionStatus || "Em producao",
+          revisionStatus: draft.revisionStatus || "Em produção",
           startedAt: new Date().toISOString(),
           pausedAt: null,
           pausedMs: 0,
@@ -599,7 +599,7 @@ function Dashboard({ state, setState, onLogout }) {
             estimateHours: 1,
             targetTopics: 1,
             progress: 0,
-            revisionStatus: "Em producao",
+            revisionStatus: "Em produção",
             completedTopics: (stats.completedTopics ?? 0) + (Number(stats.targetTopics) || 1),
             completedFiles: (stats.completedFiles ?? 0) + 1,
             finishedAt,
@@ -633,9 +633,9 @@ function Dashboard({ state, setState, onLogout }) {
           }
         },
         feed: [
-          early.bonus ? `${current.user.username} ganhou ${early.bonus} ENFECOINS por terminar antes do tempo` : `${current.user.username} terminou sem bonus de velocidade`,
+          early.bonus ? `${current.user.username} ganhou ${early.bonus} ENFECOINS por terminar antes do tempo` : `${current.user.username} terminou sem bônus de velocidade`,
           `${current.user.username} finalizou a demanda em ${durationLabel}`,
-          `${current.user.username} concluiu ${Number(stats.targetTopics) || 1} topicos`,
+          `${current.user.username} concluiu ${Number(stats.targetTopics) || 1} tópicos`,
           `Janela vencedora: ${winningWindow}`,
           ...current.feed
         ].slice(0, 20)
@@ -681,16 +681,16 @@ function Dashboard({ state, setState, onLogout }) {
 
       <section className="hero-section">
         <div className="hero-glow" />
-        <p className="eyebrow">Arena editorial colaborativa / competicao ficticia / sem dinheiro real</p>
+        <p className="eyebrow">Arena editorial colaborativa / competição fictícia / sem dinheiro real</p>
         <motion.h1 initial={false} animate={{ opacity: 1 }}>ENFE 2026</motion.h1>
-        <p>Workspace criativo gamificado para arquivos, layouts, apresentacoes e sprints de equipe.</p>
+        <p>Workspace criativo gamificado para arquivos, layouts, apresentações e sprints de equipe.</p>
         <div className="hero-metrics">
           <MetricCard label="Produtores Online" value={state.users.filter((user) => user.active).length} detail="ao vivo" />
-          <MetricCard label="Topicos Concluidos" value={totalTopics} detail="equipe" />
+          <MetricCard label="Tópicos Concluídos" value={totalTopics} detail="equipe" />
           <MetricCard label="Arquivos Finalizados" value={totalFiles} detail="entregas" />
           <MetricCard label="Demandas Ativas" value={state.users.filter((user) => productivity[user.id]?.startedAt).length} detail="agora" />
-          <MetricCard label="Lider Atual" value={topProducer?.username ?? "--"} detail="ranking" />
-          <MetricCard label="ENFECOINS" value={totalCoins} detail="ficticios" />
+          <MetricCard label="Líder Atual" value={topProducer?.username ?? "--"} detail="ranking" />
+          <MetricCard label="ENFECOINS" value={totalCoins} detail="fictícios" />
         </div>
       </section>
 
@@ -722,19 +722,19 @@ function Dashboard({ state, setState, onLogout }) {
           <PlayerProfile user={userProfile} onRename={renameUser} />
 
           <section className="section-card compact-profile">
-            <p className="eyebrow">Estatisticas do jogador</p>
+            <p className="eyebrow">Estatísticas do jogador</p>
             <div className="profile-stats">
               <span>{money(userProfile.enfecoins)} ENFECOINS</span>
-              <span>Vitorias {userProfile.wins ?? 0}</span>
+              <span>Vitórias {userProfile.wins ?? 0}</span>
               <span>Derrotas {userProfile.losses ?? 0}</span>
               <span>Winstreak {userProfile.winstreak ?? 0}</span>
               <span>Melhor odd x{userProfile.bestOddsWon ?? 0}</span>
-              <span>Bonus velocidade {money(userProfile.speedBonusWon ?? 0)}</span>
+              <span>Bônus velocidade {money(userProfile.speedBonusWon ?? 0)}</span>
               <span>Favorito {userProfile.favoriteCompetition ?? "Sprint Editorial"}</span>
             </div>
           </section>
 
-          <LiveFeed feed={state.feed.length ? state.feed : ["Sprint editorial esta ao vivo"]} />
+          <LiveFeed feed={state.feed.length ? state.feed : ["Sprint editorial está ao vivo"]} />
           <ChatPanel user={state.user} users={state.users} messages={state.chatMessages} onSend={sendChatMessage} />
         </aside>
       </div>

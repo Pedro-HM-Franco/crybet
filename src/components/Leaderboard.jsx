@@ -13,7 +13,7 @@ export function Leaderboard({ users }) {
   const mostDemands = [...users].sort((a, b) => (b.completedDemands ?? 0) - (a.completedDemands ?? 0));
 
   const boards = [
-    { title: "Mais Ricos", users: richest, metric: (user) => `🪙 ${user.enfecoins ?? 0}` },
+    { title: "Mais Ricos", users: richest, metric: (user) => `${user.enfecoins ?? 0} ENFECOINS` },
     {
       title: "Melhores Palpiteiros",
       users: bestPredictors,
@@ -22,7 +22,7 @@ export function Leaderboard({ users }) {
         return `${total ? Math.round(((user.wins ?? 0) / total) * 100) : 0}%`;
       }
     },
-    { title: "Maior Sequencia", users: bestStreak, metric: (user) => `${user.winstreak ?? 0} vitorias` },
+    { title: "Maior Sequência", users: bestStreak, metric: (user) => `${user.winstreak ?? 0} vitórias` },
     { title: "Mais Demandas", users: mostDemands, metric: (user) => `${user.completedDemands ?? 0} demandas` }
   ];
 
@@ -38,7 +38,7 @@ export function Leaderboard({ users }) {
           <div className="champion-crown">#1</div>
           <div className="avatar large">{richest[0].avatar}</div>
           <div>
-            <p className="eyebrow">Lider atual</p>
+            <p className="eyebrow">Líder atual</p>
             <h3>{richest[0].username}</h3>
             <span>{rankFor(richest[0])}</span>
           </div>
@@ -48,7 +48,7 @@ export function Leaderboard({ users }) {
         <div className="champion-card">
           <div className="champion-crown">#1</div>
           <div>
-            <p className="eyebrow">Lider atual</p>
+            <p className="eyebrow">Líder atual</p>
             <h3>Aguardando jogadores</h3>
           </div>
         </div>

@@ -3,7 +3,7 @@ export const ranks = [
   "Desafiante",
   "Jogador Elite",
   "Mestre da Arena",
-  "Campeao Nexus",
+  "Campeão Nexus",
   "Lenda ENFE"
 ];
 
@@ -18,34 +18,34 @@ export const categories = [
 export const challengeTypes = [
   { id: "speed", label: "Desafio de Velocidade", color: "blue" },
   { id: "productivity", label: "Produtividade", color: "green" },
-  { id: "health", label: "Saude e Pausas", color: "cyan" },
+  { id: "health", label: "Saúde e Pausas", color: "cyan" },
   { id: "creative", label: "Criativo", color: "purple" },
-  { id: "random", label: "Aleatorio Divertido", color: "orange" }
+  { id: "random", label: "Aleatório Divertido", color: "orange" }
 ];
 
 export const weekendEvents = [
   {
     day: "Sexta",
     title: "Sprint Editorial de Sexta",
-    description: "Arquivos finais, revisoes urgentes e energia criativa de fim de noite.",
+    description: "Arquivos finais, revisões urgentes e energia criativa de fim de noite.",
     status: "Em espera"
   },
   {
-    day: "Sabado",
-    title: "Bloco de Producao de Sabado",
-    description: "Topicos, layouts, banners e assets sendo finalizados em equipe.",
+    day: "Sábado",
+    title: "Bloco de Produção de Sábado",
+    description: "Tópicos, layouts, banners e assets sendo finalizados em equipe.",
     status: "Aberto"
   },
   {
-    day: "Sabado",
-    title: "Noitada Criativa de Sabado",
-    description: "Competicoes de entrega, revisao, exportacao e sobrevivencia editorial.",
+    day: "Sábado",
+    title: "Noitada Criativa de Sábado",
+    description: "Competições de entrega, revisão, exportação e sobrevivência editorial.",
     status: "Destaque"
   },
   {
     day: "Domingo",
     title: "Fechamento de Domingo",
-    description: "Entrega final, PDFs exportados, apresentacoes fechadas e ranking consolidado.",
+    description: "Entrega final, PDFs exportados, apresentações fechadas e ranking consolidado.",
     status: "Finais"
   }
 ];
@@ -53,36 +53,36 @@ export const weekendEvents = [
 export const starterCompetitions = [
   {
     title: "Quem termina o arquivo primeiro?",
-    description: "Corrida amigavel para ver quem fecha o arquivo atual antes.",
+    description: "Corrida amigável para ver quem fecha o arquivo atual antes.",
     category: "active",
     challengeType: "speed",
     participants: "Equipe editorial",
     timer: "LIVE",
     reward: 20,
     entryAmount: 5,
-    options: ["Pedro termina primeiro", "Maria termina primeiro", "Joao termina primeiro"]
+    options: ["Pedro termina primeiro", "Maria termina primeiro", "João termina primeiro"]
   },
   {
-    title: "Mais topicos antes da meia-noite",
-    description: "Quem completa mais topicos validos ate o fim do sprint?",
+    title: "Mais tópicos antes da meia-noite",
+    description: "Quem completa mais tópicos válidos até o fim do sprint?",
     category: "tournament",
     challengeType: "productivity",
     participants: "Todos os produtores",
     timer: "SAT 21:00",
     reward: 35,
     entryAmount: 8,
-    options: ["Pedro", "Maria", "Joao", "Azarao produtivo"]
+    options: ["Pedro", "Maria", "João", "Azarão produtivo"]
   },
   {
     title: "Melhor layout entregue hoje",
-    description: "Votacao de zoeira para o layout mais bonito do dia.",
+    description: "Votação de zoeira para o layout mais bonito do dia.",
     category: "challenge",
     challengeType: "creative",
     participants: "Design squad",
     timer: "SUN 16:00",
     reward: 25,
     entryAmount: 5,
-    options: ["Banner", "Apresentacao", "Editorial", "Logo rapido"]
+    options: ["Banner", "Apresentação", "Editorial", "Logo rápido"]
   }
 ];
 
@@ -90,7 +90,7 @@ export function rankFor(user) {
   const wins = user.wins ?? user.correct ?? 0;
   const coins = user.enfecoins ?? user.crycoins ?? 0;
   if (coins >= 500 || wins >= 12) return "Lenda ENFE";
-  if (coins >= 300 || wins >= 8) return "Campeao Nexus";
+  if (coins >= 300 || wins >= 8) return "Campeão Nexus";
   if (coins >= 200 || wins >= 5) return "Mestre da Arena";
   if (coins >= 120 || wins >= 3) return "Jogador Elite";
   if (wins >= 1) return "Desafiante";

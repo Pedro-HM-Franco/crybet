@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
 const finishWindows = [
-  { id: "under-1h", label: "Menos de 1h", helper: "Entrega relampago" },
+  { id: "under-1h", label: "Menos de 1h", helper: "Entrega relâmpago" },
   { id: "1-2h", label: "1h a 2h", helper: "Ritmo forte" },
   { id: "2-4h", label: "2h a 4h", helper: "Sprint normal" },
-  { id: "over-4h", label: "Mais de 4h", helper: "Modo sobrevivencia" }
+  { id: "over-4h", label: "Mais de 4h", helper: "Modo sobrevivência" }
 ];
 
 function customWindowId(minutes) {
@@ -104,7 +104,7 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
       </div>
 
       {!productiveUsers.length ? (
-        <p className="empty-state">Nenhuma outra pessoa iniciou uma demanda ainda. Assim que alguem iniciar, os palpites aparecem aqui.</p>
+        <p className="empty-state">Nenhuma outra pessoa iniciou uma demanda ainda. Assim que alguém iniciar, os palpites aparecem aqui.</p>
       ) : (
         <>
           <div className="demand-controls">
@@ -128,7 +128,7 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
               <div>
                 <strong>{target.username}</strong>
                 <p>{targetStats.currentFile || "Sem arquivo definido"} / {targetStats.currentTask || "Sem tarefa definida"}</p>
-                <small>{targetStats.pausedAt ? "Demanda pausada, cronometro congelado" : "Demanda rodando"}</small>
+                <small>{targetStats.pausedAt ? "Demanda pausada, cronômetro congelado" : "Demanda rodando"}</small>
                 <div className="progress-bar"><span style={{ width: `${targetStats.progress ?? 0}%` }} /></div>
               </div>
             </div>
