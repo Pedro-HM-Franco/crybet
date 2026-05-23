@@ -21,6 +21,17 @@ function betMatchesCurrentDemand(bet, productivity) {
   return new Date(bet.createdAt).getTime() >= new Date(targetStartedAt).getTime();
 }
 
+function normalizeDemandBets(state) {
+  const productivity = state.productivity ?? {};
+  const finishBets = (state.finishBets ?? []).map((bet) => {
+    if (bet.status !== "active") return bet;
+    const stats = productivity[bet.targetUserId] ?? {};
+    if (betMatchesCurrentDemand(bet, productivity)) return bet;
+    return { ...bet, status: "expired", expiredAt: stats.startedAt ?? new Date().toISOString() };
+  });
+  return { ...state, finishBets };
+}
+
 function calcOdds(competition, optionId, users = [], productivity = {}) {
   const total = Math.max(competition.bets.length, 1);
   const optionBets = competition.bets.filter((bet) => bet.optionId === optionId).length;
@@ -901,7 +912,7 @@ function Dashboard({ state, setState, onLogout }) {
 }
 
 export default function App() {
-  const [state, setState] = useState(() => loadState());
+  const [state, setState] = useState(() => normalizeDemandBets(loadState()));
   const applyingRemote = useRef(false);
   const cloudReady = useRef(!supabase);
   const lastCloudSnapshot = useRef("");
@@ -924,13 +935,29 @@ export default function App() {
       if (cancelled || !cloudState || Object.keys(cloudState).length === 0 || cloudState.platform !== "enfe-clean-v2") return;
       lastCloudSnapshot.current = JSON.stringify(cloudState);
       applyingRemote.current = true;
-      setState((current) => ({ ...current, ...cloudState, user: current.user }));
+      setState((current) => {
+        const normalized = normalizeDemandBets({ ...current, ...cloudState, user: current.user });
+        const normalizedSnapshot = JSON.stringify(toCloudState(normalized));
+        if (normalizedSnapshot !== JSON.stringify(cloudState)) {
+          lastCloudSnapshot.current = normalizedSnapshot;
+          window.setTimeout(() => saveCloudState(normalized), 0);
+        }
+        return normalized;
+      });
     });
     return subscribeCloudState((cloudState) => {
       if (cloudState.platform !== "enfe-clean-v2") return;
       lastCloudSnapshot.current = JSON.stringify(cloudState);
       applyingRemote.current = true;
-      setState((current) => ({ ...current, ...cloudState, user: current.user }));
+      setState((current) => {
+        const normalized = normalizeDemandBets({ ...current, ...cloudState, user: current.user });
+        const normalizedSnapshot = JSON.stringify(toCloudState(normalized));
+        if (normalizedSnapshot !== JSON.stringify(cloudState)) {
+          lastCloudSnapshot.current = normalizedSnapshot;
+          window.setTimeout(() => saveCloudState(normalized), 0);
+        }
+        return normalized;
+      });
     });
   }, []);
 

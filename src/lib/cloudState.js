@@ -282,6 +282,46 @@ async function upsertRows(table, rows) {
   if (error) throw error;
 }
 
+const finishBetStatusRank = {
+  active: 1,
+  expired: 2,
+  canceled: 3,
+  resolved: 4
+};
+
+async function upsertFinishBetRows(rows) {
+  if (!rows.length) return;
+
+  const ids = rows.map((row) => row.id);
+  const { data, error } = await supabase
+    .from("enfe_finish_bets")
+    .select("id,status,winning_window,won,refunded,resolved_at,canceled_at")
+    .in("id", ids);
+
+  if (error) throw error;
+
+  const existingById = new Map((data ?? []).map((row) => [row.id, row]));
+  const mergedRows = rows.map((row) => {
+    const existing = existingById.get(row.id);
+    const incomingRank = finishBetStatusRank[row.status] ?? 1;
+    const existingRank = finishBetStatusRank[existing?.status] ?? 0;
+    if (existing && existingRank > incomingRank) {
+      return {
+        ...row,
+        status: existing.status,
+        winning_window: existing.winning_window,
+        won: existing.won,
+        refunded: existing.refunded,
+        resolved_at: existing.resolved_at,
+        canceled_at: existing.canceled_at
+      };
+    }
+    return row;
+  });
+
+  await upsertRows("enfe_finish_bets", mergedRows);
+}
+
 export async function saveCloudState(state) {
   if (!supabase) return;
   if (!(await tableExists())) {
@@ -457,7 +497,7 @@ export async function saveCloudState(state) {
       }),
       upsertRows("enfe_productivity", productivityRows),
       upsertRows("enfe_completed_demands", completedRows),
-      upsertRows("enfe_finish_bets", finishBetRows),
+      upsertFinishBetRows(finishBetRows),
       upsertRows("enfe_chat_messages", chatRows),
       upsertRows("enfe_competitions", competitionRows)
     ]);
