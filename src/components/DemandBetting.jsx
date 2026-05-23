@@ -137,9 +137,9 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
           <div className="active-bets-panel">
             <div>
               <span className="field-title">Palpites ativos nesta demanda</span>
-              <p>Veja quem apostou em quem antes da demanda terminar.</p>
+              <p>Veja quem acreditou em quem antes da demanda terminar.</p>
             </div>
-            {!activeBets.length ? <small>Ninguém apostou nessa demanda ainda.</small> : null}
+            {!activeBets.length ? <small>Ninguém acreditou nessa demanda ainda.</small> : null}
             {activeBets.map((bet) => (
               <article key={bet.id}>
                 <strong>{bet.bettorName}</strong>

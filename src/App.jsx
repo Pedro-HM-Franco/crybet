@@ -657,7 +657,7 @@ function Dashboard({ state, setState, onLogout }) {
         users: current.users.map((user) => user.id === current.user.id ? { ...user, enfecoins: user.enfecoins - amount } : user),
         finishBets: [...(current.finishBets ?? []), bet],
         totalCoinFlow: current.totalCoinFlow + amount,
-        feed: [`${current.user.username} apostou ${amount} ENFECOINS que ${target.username} termina em ${windowLabel}`, ...current.feed].slice(0, 20)
+        feed: [`${current.user.username} acreditou ${amount} ENFECOINS em ${target.username} para terminar em ${windowLabel}`, ...current.feed].slice(0, 20)
       };
     });
   }
