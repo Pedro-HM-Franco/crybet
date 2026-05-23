@@ -496,6 +496,39 @@ input:focus, textarea:focus, select:focus {
 
 .player-profile h2 { margin: 0; font-size: 2rem; }
 .player-profile p { color: var(--muted); }
+.profile-edit-toggle {
+  width: 100%;
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,.05);
+  color: var(--cyan);
+  padding: 11px 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.rename-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+.rename-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.rename-form button {
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--cyan), var(--blue));
+  color: #020617;
+  padding: 11px 14px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
 .profile-stats, .market-stats {
   display: flex;
   flex-wrap: wrap;

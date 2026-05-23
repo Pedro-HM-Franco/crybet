@@ -283,6 +283,47 @@ function WhoBetWhat({ users, competitions }) {
   );
 }
 
+function PlayerProfile({ user, onRename }) {
+  const [name, setName] = useState(user.username);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setName(user.username);
+  }, [user.username]);
+
+  return (
+    <section className="section-card player-profile">
+      <div className="profile-row">
+        <div className="avatar large">{user.avatar}</div>
+        <div>
+          <p className="eyebrow">Perfil do usuario</p>
+          <h2>{user.username}</h2>
+          <p>{rankFor(user)}</p>
+        </div>
+      </div>
+      <button className="profile-edit-toggle" type="button" onClick={() => setOpen((value) => !value)}>
+        {open ? "Fechar edicao" : "Alterar nome"}
+      </button>
+      {open ? (
+        <form
+          className="rename-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onRename(name);
+            setOpen(false);
+          }}
+        >
+          <label>
+            Novo nome
+            <input value={name} onChange={(event) => setName(event.target.value)} maxLength={18} />
+          </label>
+          <button type="submit">Salvar nome</button>
+        </form>
+      ) : null}
+    </section>
+  );
+}
+
 function Dashboard({ state, setState, onLogout }) {
   const userProfile = state.users.find((user) => user.id === state.user?.id) ?? state.user;
   const activeCompetitions = state.competitions.filter((item) => item.status === "active");
@@ -540,6 +581,25 @@ function Dashboard({ state, setState, onLogout }) {
     setState((current) => ({ ...current, chatMessages: [...current.chatMessages, message].slice(-200) }));
   }
 
+  function renameUser(newName) {
+    const clean = newName.trim();
+    if (!clean || clean.length < 2) return;
+    setState((current) => ({
+      ...current,
+      user: { ...current.user, username: clean },
+      users: current.users.map((user) => user.id === current.user.id ? { ...user, username: clean } : user),
+      finishBets: (current.finishBets ?? []).map((bet) => ({
+        ...bet,
+        bettorName: bet.bettorId === current.user.id ? clean : bet.bettorName,
+        targetName: bet.targetUserId === current.user.id ? clean : bet.targetName
+      })),
+      chatMessages: current.chatMessages.map((message) =>
+        message.fromId === current.user.id ? { ...message, fromName: clean } : message
+      ),
+      feed: [`${current.user.username} mudou o nome para ${clean}`, ...current.feed].slice(0, 20)
+    }));
+  }
+
   return (
     <main className="app-shell">
       <nav className="topbar">
@@ -590,15 +650,10 @@ function Dashboard({ state, setState, onLogout }) {
         </div>
 
         <aside className="side-stack">
-          <section className="section-card player-profile">
-            <p className="eyebrow">Perfil criativo</p>
-            <div className="profile-row">
-              <div className="avatar large">{userProfile.avatar}</div>
-              <div>
-                <h2>{userProfile.username}</h2>
-                <p>{rankFor(userProfile)}</p>
-              </div>
-            </div>
+          <PlayerProfile user={userProfile} onRename={renameUser} />
+
+          <section className="section-card compact-profile">
+            <p className="eyebrow">Estatisticas do jogador</p>
             <div className="profile-stats">
               <span>{money(userProfile.enfecoins)} ENFECOINS</span>
               <span>Vitorias {userProfile.wins ?? 0}</span>
