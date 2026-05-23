@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const finishWindows = [
   { id: "under-1h", label: "Menos de 1h", helper: "Entrega relampago" },
@@ -56,12 +56,19 @@ export function didFinishBetWin(bet, startedAt, finishedAt) {
 
 export function DemandBetting({ user, users, productivity, finishBets, onBet }) {
   const productiveUsers = users.filter(
-    (item) => item.id !== user.id && (productivity[item.id]?.currentTask || productivity[item.id]?.currentFile)
+    (item) => item.id !== user.id && productivity[item.id]?.startedAt
   );
   const [targetId, setTargetId] = useState(productiveUsers[0]?.id ?? "");
   const [amount, setAmount] = useState(5);
   const [customHours, setCustomHours] = useState(1);
   const [customMinutes, setCustomMinutes] = useState(0);
+
+  useEffect(() => {
+    const targetStillExists = productiveUsers.some((item) => item.id === targetId);
+    if (!targetStillExists) {
+      setTargetId(productiveUsers[0]?.id ?? "");
+    }
+  }, [productiveUsers, targetId]);
 
   const target = users.find((item) => item.id === targetId);
   const targetStats = productivity[targetId] ?? {};
@@ -70,6 +77,7 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
     (bet) => bet.targetUserId === targetId && bet.bettorId === user.id && bet.status === "active"
   );
   const customTotalMinutes = Number(customHours || 0) * 60 + Number(customMinutes || 0);
+  const balance = user.enfecoins ?? 0;
   const customId = customWindowId(customTotalMinutes);
   const customOdds = windowOdds({ windowId: customId, bets: activeBets, targetProgress: targetStats.progress ?? 0 });
 
@@ -106,7 +114,7 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
             </label>
             <label>
               ENFECOINS
-              <input type="number" min="1" max={user.enfecoins} value={amount} onChange={(event) => setAmount(Number(event.target.value) || 1)} />
+              <input type="number" min="1" max={balance} value={amount} onChange={(event) => setAmount(Number(event.target.value) || 1)} />
             </label>
           </div>
 
@@ -136,7 +144,7 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
                     className="finish-window-card"
                     type="button"
                     key={item.id}
-                    disabled={user.enfecoins < amount}
+                    disabled={!targetId || balance < amount}
                     onClick={() => onBet({ targetUserId: targetId, windowId: item.id, windowLabel: item.label, amount, odds: odds[item.id] })}
                   >
                     <span>{item.helper}</span>
@@ -161,7 +169,7 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
                 </label>
                 <button
                   type="button"
-                  disabled={user.enfecoins < amount || customTotalMinutes <= 0}
+                  disabled={!targetId || balance < amount || customTotalMinutes <= 0}
                   onClick={() =>
                     onBet({
                       targetUserId: targetId,

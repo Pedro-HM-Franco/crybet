@@ -330,7 +330,9 @@ function Dashboard({ state, setState, onLogout }) {
       return {
         ...current,
         user: { ...current.user, enfecoins: current.user.enfecoins - amount },
-        users: current.users.map((user) => user.id === current.user.id ? { ...user, enfecoins: user.enfecoins - amount } : user),
+        users: current.users.map((user) =>
+          user.id === current.user.id ? { ...user, enfecoins: (user.enfecoins ?? 0) - amount } : user
+        ),
         competitions: current.competitions.map((item) => item.id === competitionId ? { ...item, bets: [...item.bets, bet] } : item),
         volatility: clamp(current.volatility + 2),
         totalCoinFlow: current.totalCoinFlow + amount,
@@ -434,7 +436,8 @@ function Dashboard({ state, setState, onLogout }) {
       const already = (current.finishBets ?? []).some(
         (bet) => bet.bettorId === current.user.id && bet.targetUserId === targetUserId && bet.status === "active"
       );
-      if (!target || already || current.user.enfecoins < amount) return current;
+      const currentBalance = current.user.enfecoins ?? 0;
+      if (!target || already || currentBalance < amount) return current;
       const bet = {
         id: makeId("finish-bet"),
         bettorId: current.user.id,
@@ -450,7 +453,7 @@ function Dashboard({ state, setState, onLogout }) {
       };
       return {
         ...current,
-        user: { ...current.user, enfecoins: current.user.enfecoins - amount },
+        user: { ...current.user, enfecoins: currentBalance - amount },
         users: current.users.map((user) => user.id === current.user.id ? { ...user, enfecoins: user.enfecoins - amount } : user),
         finishBets: [...(current.finishBets ?? []), bet],
         totalCoinFlow: current.totalCoinFlow + amount,
@@ -661,7 +664,7 @@ export default function App() {
   }, [state]);
 
   function activateUser(profile, label) {
-    const activeProfile = { ...profile, active: true, rank: rankFor(profile) };
+    const activeProfile = { ...profile, enfecoins: profile.enfecoins ?? 50, active: true, rank: rankFor(profile) };
     setState((current) => ({
       ...current,
       user: activeProfile,
