@@ -327,7 +327,7 @@ function PlayerProfile({ user, productivity, finishBets, onRename }) {
       ) : null}
       <div className="profile-detail-grid">
         <span>Demandas concluídas: {user.completedDemands ?? 0}</span>
-        <span>Bônus velocidade: {money(user.speedBonusWon ?? 0)}</span>
+        <span>Bônus de produção: {money(user.speedBonusWon ?? 0)}</span>
         <span>Moedas ganhas: {money(user.totalWon ?? 0)}</span>
         <span>Palpites ativos: {activeUserBets.length}</span>
       </div>
@@ -512,6 +512,12 @@ function Dashboard({ state, setState, onLogout }) {
     return { estimateMinutes, actualMinutes, savedMinutes, bonus };
   }
 
+  function calculateOnTimeBonus(stats, early) {
+    const targetTopics = Math.max(1, Number(stats.targetTopics) || 1);
+    const finishedOnTime = early.estimateMinutes > 0 && early.actualMinutes <= early.estimateMinutes;
+    return finishedOnTime ? Math.max(5, targetTopics * 2) : 0;
+  }
+
   function pauseDemand() {
     setState((current) => {
       const stats = current.productivity?.[current.user.id] ?? {};
@@ -669,6 +675,8 @@ function Dashboard({ state, setState, onLogout }) {
       const winningWindow = classifyFinishWindow(stats, finishedAt);
       const durationLabel = formatDuration(stats, finishedAt);
       const early = calculateEarlyBonus(stats, finishedAt);
+      const onTimeBonus = calculateOnTimeBonus(stats, early);
+      const producerBonus = early.bonus + onTimeBonus;
       const finishBets = (current.finishBets ?? []).map((bet) =>
         bet.targetUserId === current.user.id && bet.status === "active"
           ? { ...bet, status: "resolved", winningWindow, won: didFinishBetWin(bet, stats, finishedAt), resolvedAt: finishedAt }
@@ -678,19 +686,19 @@ function Dashboard({ state, setState, onLogout }) {
       const wonCount = resolvedBets.filter((bet) => bet.won).length;
       const winnerFeed = resolvedBets
         .filter((bet) => bet.won)
-        .map((bet) => `${bet.bettorName} ganhou ${Math.round(bet.amount * bet.odds)} ENFECOINS apostando em ${bet.targetName} (${bet.windowLabel || bet.windowId})`);
+        .map((bet) => `${bet.bettorName} ganhou ${Math.round(bet.amount * bet.odds)} ENFECOINS por acreditar em ${bet.targetName} (${bet.windowLabel || bet.windowId})`);
       const users = current.users.map((user) => {
         const wonBets = finishBets.filter((bet) => bet.bettorId === user.id && bet.resolvedAt === finishedAt && bet.won);
         const reward = wonBets.reduce((sum, bet) => sum + Math.round(bet.amount * bet.odds), 0);
-        const earlyBonus = user.id === current.user.id ? early.bonus : 0;
-        if (!reward && !earlyBonus && user.id !== current.user.id) return user;
+        const productionBonus = user.id === current.user.id ? producerBonus : 0;
+        if (!reward && !productionBonus && user.id !== current.user.id) return user;
         return {
           ...user,
-          enfecoins: (user.enfecoins ?? 0) + reward + earlyBonus,
+          enfecoins: (user.enfecoins ?? 0) + reward + productionBonus,
           wins: (user.wins ?? 0) + (reward ? wonBets.length : 0),
           completedDemands: (user.completedDemands ?? 0) + (user.id === current.user.id ? 1 : 0),
-          totalWon: (user.totalWon ?? 0) + reward + earlyBonus,
-          speedBonusWon: (user.speedBonusWon ?? 0) + earlyBonus
+          totalWon: (user.totalWon ?? 0) + reward + productionBonus,
+          speedBonusWon: (user.speedBonusWon ?? 0) + productionBonus
         };
       });
       return {
@@ -727,7 +735,9 @@ function Dashboard({ state, setState, onLogout }) {
                 estimateMinutes: early.estimateMinutes,
                 actualMinutes: early.actualMinutes,
                 savedMinutes: early.savedMinutes,
-                speedBonus: early.bonus,
+                speedBonus: producerBonus,
+                onTimeBonus,
+                earlyBonus: early.bonus,
                 finishedAtLabel: new Intl.DateTimeFormat("pt-BR", {
                   day: "2-digit",
                   month: "2-digit",
@@ -741,13 +751,14 @@ function Dashboard({ state, setState, onLogout }) {
           }
         },
         feed: [
-          early.bonus ? `${current.user.username} ganhou ${early.bonus} ENFECOINS por terminar antes do tempo` : `${current.user.username} terminou sem bônus de velocidade`,
+          onTimeBonus ? `${current.user.username} ganhou ${onTimeBonus} ENFECOINS por cumprir o prazo marcado` : `${current.user.username} não recebeu bônus de prazo`,
+          early.bonus ? `${current.user.username} ganhou ${early.bonus} ENFECOINS extras por terminar antes do tempo` : null,
           `${current.user.username} finalizou a demanda em ${durationLabel}`,
           `${current.user.username} concluiu ${Number(stats.targetTopics) || 1} tópicos`,
           ...winnerFeed.slice(0, 5),
           resolvedBets.length ? `${wonCount} de ${resolvedBets.length} palpites acertaram a janela ${winningWindow}` : "Nenhum palpite ativo nessa demanda",
           ...current.feed
-        ].slice(0, 20)
+        ].filter(Boolean).slice(0, 20)
       };
     });
   }
@@ -840,7 +851,7 @@ function Dashboard({ state, setState, onLogout }) {
               <span>Derrotas {userProfile.losses ?? 0}</span>
               <span>Winstreak {userProfile.winstreak ?? 0}</span>
               <span>Melhor odd x{userProfile.bestOddsWon ?? 0}</span>
-              <span>Bônus velocidade {money(userProfile.speedBonusWon ?? 0)}</span>
+              <span>Bônus de produção {money(userProfile.speedBonusWon ?? 0)}</span>
               <span>Favorito {userProfile.favoriteCompetition ?? "Sprint Editorial"}</span>
             </div>
           </section>

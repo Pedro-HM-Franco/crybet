@@ -257,12 +257,16 @@ export function CompletedDemands({ user, productivity }) {
               <em>Tempo gasto: {item.durationLabel}</em>
               {item.speedBonus ? (
                 <div className="speed-bonus">
-                  <span>Bônus de velocidade</span>
+                  <span>Bônus de produção</span>
                   <strong>+{item.speedBonus} ENFECOINS</strong>
-                  <small>{formatMinutes(item.savedMinutes)} antes do combinado</small>
+                  <small>
+                    {item.savedMinutes > 0
+                      ? `${formatMinutes(item.savedMinutes)} antes do combinado`
+                      : "Prazo cumprido no tempo marcado"}
+                  </small>
                 </div>
               ) : (
-                <small className="muted-note">Sem bônus: terminou no tempo marcado ou depois.</small>
+                <small className="muted-note">Sem bônus: terminou depois do tempo marcado.</small>
               )}
             </article>
           ))}
