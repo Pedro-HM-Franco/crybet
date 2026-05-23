@@ -318,6 +318,25 @@ async function upsertUserRows(rows) {
   await upsertRows("enfe_users", mergedRows);
 }
 
+async function upsertProductivityRows(rows) {
+  if (!rows.length) return;
+
+  const ids = rows.map((row) => row.user_id);
+  const { data, error } = await supabase.from("enfe_productivity").select("*").in("user_id", ids);
+  if (error) throw error;
+
+  const existingById = new Map((data ?? []).map((row) => [row.user_id, row]));
+  const mergedRows = rows.map((row) => {
+    const existing = existingById.get(row.user_id);
+    if (existing && isAfter(existing.updated_at, row.updated_at)) {
+      return existing;
+    }
+    return row;
+  });
+
+  await upsertRows("enfe_productivity", mergedRows);
+}
+
 const finishBetStatusRank = {
   active: 1,
   expired: 2,
@@ -413,7 +432,7 @@ export async function saveCloudState(state) {
     canceled_at: isoOrNull(stats.canceledAt),
     extension_count: stats.extensionCount ?? 0,
     extension_hours: stats.extensionHours ?? 0,
-    updated_at: now
+    updated_at: isoOrNull(stats.updatedAt) ?? now
   }));
 
   const completedRows = Object.entries(productivity).flatMap(([userId, stats]) =>
@@ -531,7 +550,7 @@ export async function saveCloudState(state) {
         active_trigger_count: global.activeTriggerCount ?? 0,
         updated_at: now
       }),
-      upsertRows("enfe_productivity", productivityRows),
+      upsertProductivityRows(productivityRows),
       upsertRows("enfe_completed_demands", completedRows),
       upsertFinishBetRows(finishBetRows),
       upsertRows("enfe_chat_messages", chatRows),

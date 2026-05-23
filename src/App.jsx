@@ -28,6 +28,34 @@ function updateUserRecord(user, updates = {}) {
   return { ...user, ...updates, updatedAt: new Date().toISOString() };
 }
 
+function isAfter(left, right) {
+  const leftTime = left ? new Date(left).getTime() : 0;
+  const rightTime = right ? new Date(right).getTime() : 0;
+  return leftTime > rightTime;
+}
+
+function mergeUsersByUpdatedAt(localUsers = [], cloudUsers = []) {
+  const usersById = new Map(cloudUsers.map((user) => [user.id, user]));
+  localUsers.forEach((localUser) => {
+    const cloudUser = usersById.get(localUser.id);
+    if (!cloudUser || isAfter(localUser.updatedAt, cloudUser.updatedAt)) {
+      usersById.set(localUser.id, localUser);
+    }
+  });
+  return [...usersById.values()];
+}
+
+function mergeProductivityByUpdatedAt(localProductivity = {}, cloudProductivity = {}) {
+  const merged = { ...cloudProductivity };
+  Object.entries(localProductivity).forEach(([userId, localStats]) => {
+    const cloudStats = cloudProductivity[userId];
+    if (!cloudStats || isAfter(localStats.updatedAt, cloudStats.updatedAt)) {
+      merged[userId] = localStats;
+    }
+  });
+  return merged;
+}
+
 function betMatchesCurrentDemand(bet, productivity) {
   const targetStartedAt = productivity?.[bet.targetUserId]?.startedAt;
   if (!targetStartedAt || !bet.createdAt) return false;
@@ -46,10 +74,14 @@ function normalizeDemandBets(state) {
 }
 
 function applyCloudState(current, cloudState) {
-  const syncedUser = cloudState.users?.find((user) => user.id === current.user?.id);
+  const users = mergeUsersByUpdatedAt(current.users, cloudState.users);
+  const productivity = mergeProductivityByUpdatedAt(current.productivity, cloudState.productivity);
+  const syncedUser = users.find((user) => user.id === current.user?.id);
   return normalizeDemandBets({
     ...current,
     ...cloudState,
+    users,
+    productivity,
     user: syncedUser ? { ...syncedUser, active: true } : current.user
   });
 }
@@ -691,7 +723,8 @@ function Dashboard({ state, setState, onLogout }) {
             startedAt: null,
             pausedAt: null,
             pausedMs: 0,
-            canceledAt
+            canceledAt,
+            updatedAt: canceledAt
           }
         },
         feed: [
@@ -768,7 +801,8 @@ function Dashboard({ state, setState, onLogout }) {
               revisionStatus: "Em produção",
               startedAt: null,
               pausedAt: null,
-              pausedMs: 0
+              pausedMs: 0,
+              updatedAt: new Date().toISOString()
             }
           },
           feed: [`${current.user.username} limpou uma demanda que já estava finalizada`, ...current.feed].slice(0, 20)
@@ -827,6 +861,7 @@ function Dashboard({ state, setState, onLogout }) {
             startedAt: null,
             pausedAt: null,
             pausedMs: 0,
+            updatedAt: finishedAt,
             completedHistory: [
               {
                 id: completedDemandId(current.user.id, stats.startedAt),
