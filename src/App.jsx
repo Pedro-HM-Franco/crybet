@@ -527,6 +527,56 @@ function Dashboard({ state, setState, onLogout }) {
     });
   }
 
+  function cancelDemand() {
+    setState((current) => {
+      const stats = current.productivity?.[current.user.id] ?? {};
+      if (!stats.startedAt) return current;
+
+      const canceledAt = new Date().toISOString();
+      const activeBets = (current.finishBets ?? []).filter(
+        (bet) => bet.targetUserId === current.user.id && bet.status === "active"
+      );
+      const refundedUsers = current.users.map((user) => {
+        const refund = activeBets
+          .filter((bet) => bet.bettorId === user.id)
+          .reduce((sum, bet) => sum + Number(bet.amount ?? 0), 0);
+        return refund ? { ...user, enfecoins: (user.enfecoins ?? 0) + refund } : user;
+      });
+
+      return {
+        ...current,
+        users: refundedUsers,
+        user: refundedUsers.find((user) => user.id === current.user.id) ?? current.user,
+        finishBets: (current.finishBets ?? []).map((bet) =>
+          bet.targetUserId === current.user.id && bet.status === "active"
+            ? { ...bet, status: "canceled", canceledAt, refunded: true }
+            : bet
+        ),
+        productivity: {
+          ...(current.productivity ?? {}),
+          [current.user.id]: {
+            ...stats,
+            currentFile: "",
+            currentTask: "",
+            estimateHours: 1,
+            targetTopics: 1,
+            progress: 0,
+            revisionStatus: "Em produção",
+            startedAt: null,
+            pausedAt: null,
+            pausedMs: 0,
+            canceledAt
+          }
+        },
+        feed: [
+          `${current.user.username} cancelou a demanda atual`,
+          activeBets.length ? `${activeBets.length} palpites foram cancelados e reembolsados` : "Nenhum palpite precisava ser reembolsado",
+          ...current.feed
+        ].slice(0, 20)
+      };
+    });
+  }
+
   function placeFinishBet({ targetUserId, windowId, windowLabel, amount, odds }) {
     setState((current) => {
       const target = current.users.find((user) => user.id === targetUserId);
@@ -704,6 +754,7 @@ function Dashboard({ state, setState, onLogout }) {
             onStart={startDemand}
             onPause={pauseDemand}
             onResume={resumeDemand}
+            onCancel={cancelDemand}
             onComplete={completeDemand}
           />
           <CompletedDemands user={state.user} productivity={productivity} />

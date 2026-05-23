@@ -39,7 +39,7 @@ function deadlineInfo(stats, now) {
   };
 }
 
-export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPause, onResume, onComplete }) {
+export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPause, onResume, onCancel, onComplete }) {
   const current = productivity[user.id] ?? {
     currentFile: "",
     currentTask: "",
@@ -143,6 +143,9 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPau
         ) : null}
         <button type="button" className="complete-button" onClick={onComplete} disabled={!isStarted}>
           Finalizar demanda
+        </button>
+        <button type="button" className="cancel-button" onClick={onCancel} disabled={!isStarted}>
+          Cancelar demanda
         </button>
         {isPaused ? <small>Demanda pausada. O tempo parado não entra no cronômetro.</small> : null}
         {isStarted && !isPaused ? <small>Demanda em andamento desde que foi iniciada.</small> : null}
