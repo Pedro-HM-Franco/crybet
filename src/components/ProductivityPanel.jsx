@@ -201,6 +201,9 @@ export function TeamProgress({ users, productivity }) {
                 <h3>{user.username}</h3>
                 <p>{stats.currentFile || "Sem arquivo definido"}</p>
                 <p>{stats.currentTask || "Aguardando tarefa"}</p>
+                <span className="topic-target">
+                  {stats.startedAt ? `${Number(stats.targetTopics) || 1} tópicos planejados` : "Sem tópicos planejados"}
+                </span>
                 {stats.startedAt ? <small>{stats.pausedAt ? "Pausado" : "Em andamento"}</small> : null}
               </div>
               <div className={deadline?.overdue ? "progress-bar deadline overdue" : "progress-bar deadline"}>

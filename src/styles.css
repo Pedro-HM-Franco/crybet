@@ -802,6 +802,19 @@ input:focus, textarea:focus, select:focus {
   color: var(--muted);
   font-size: .84rem;
 }
+.topic-target {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 7px;
+  border: 1px solid rgba(103,232,249,.22);
+  border-radius: 999px;
+  background: rgba(103,232,249,.08);
+  color: var(--cyan);
+  padding: 5px 8px;
+  font-size: .72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
 .progress-card small {
   grid-column: 1 / -1;
   color: var(--muted);
