@@ -1,11 +1,11 @@
 import { seedGraph } from "../data/seed";
 
-const KEY = "enfe-2026-state-v1";
+const KEY = "enfe-2026-clean-state-v2";
 const RESET_MARKER = "enfe-reset-marker";
-const RESET_VERSION = "enfe-2026-v1";
+const RESET_VERSION = "enfe-clean-v2";
 
 const baseState = {
-  platform: "enfe-2026",
+  platform: "enfe-clean-v2",
   user: null,
   users: [],
   predictions: [],

@@ -624,11 +624,11 @@ export default function App() {
   const lastCloudSnapshot = useRef("");
 
   useEffect(() => {
-    const mustReset = window.localStorage.getItem("enfe-force-state") !== "editorial-v1";
+    const mustReset = window.localStorage.getItem("enfe-force-state") !== "clean-v2";
     if (mustReset) {
       resetCrybetStorage();
-      window.localStorage.setItem("enfe-reset-marker", "enfe-editorial-v1");
-      window.localStorage.setItem("enfe-force-state", "editorial-v1");
+      window.localStorage.setItem("enfe-reset-marker", "enfe-clean-v2");
+      window.localStorage.setItem("enfe-force-state", "clean-v2");
       setState(emptyState());
     }
   }, []);
@@ -638,13 +638,13 @@ export default function App() {
     let cancelled = false;
     loadCloudState().then((cloudState) => {
       cloudReady.current = true;
-      if (cancelled || !cloudState || Object.keys(cloudState).length === 0 || cloudState.platform !== "enfe-2026") return;
+      if (cancelled || !cloudState || Object.keys(cloudState).length === 0 || cloudState.platform !== "enfe-clean-v2") return;
       lastCloudSnapshot.current = JSON.stringify(cloudState);
       applyingRemote.current = true;
       setState((current) => ({ ...current, ...cloudState, user: current.user }));
     });
     return subscribeCloudState((cloudState) => {
-      if (cloudState.platform !== "enfe-2026") return;
+      if (cloudState.platform !== "enfe-clean-v2") return;
       lastCloudSnapshot.current = JSON.stringify(cloudState);
       applyingRemote.current = true;
       setState((current) => ({ ...current, ...cloudState, user: current.user }));
