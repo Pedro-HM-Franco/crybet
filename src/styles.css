@@ -970,6 +970,9 @@ input:focus, textarea:focus, select:focus {
 .leaderboard-panel:nth-child(3) {
   box-shadow: inset 3px 0 0 var(--green);
 }
+.leaderboard-panel:nth-child(4) {
+  box-shadow: inset 3px 0 0 var(--orange);
+}
 .leader-row span:first-child {
   color: var(--cyan);
   font-weight: 950;

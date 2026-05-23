@@ -10,6 +10,7 @@ export function Leaderboard({ users }) {
     return bAccuracy - aAccuracy;
   });
   const bestStreak = [...users].sort((a, b) => (b.winstreak ?? 0) - (a.winstreak ?? 0));
+  const mostDemands = [...users].sort((a, b) => (b.completedDemands ?? 0) - (a.completedDemands ?? 0));
 
   const boards = [
     { title: "Mais Ricos", users: richest, metric: (user) => `🪙 ${user.enfecoins ?? 0}` },
@@ -21,7 +22,8 @@ export function Leaderboard({ users }) {
         return `${total ? Math.round(((user.wins ?? 0) / total) * 100) : 0}%`;
       }
     },
-    { title: "Maior Sequencia", users: bestStreak, metric: (user) => `${user.winstreak ?? 0} vitorias` }
+    { title: "Maior Sequencia", users: bestStreak, metric: (user) => `${user.winstreak ?? 0} vitorias` },
+    { title: "Mais Demandas", users: mostDemands, metric: (user) => `${user.completedDemands ?? 0} demandas` }
   ];
 
   return (
