@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
 
-function formatElapsed(startedAt, now) {
-  if (!startedAt) return "00:00:00";
-  const totalSeconds = Math.max(0, Math.floor((now - new Date(startedAt).getTime()) / 1000));
+function workedMilliseconds(stats, now) {
+  if (!stats.startedAt) return 0;
+  const start = new Date(stats.startedAt).getTime();
+  const pausedNow = stats.pausedAt ? Math.max(0, now - new Date(stats.pausedAt).getTime()) : 0;
+  const pausedTotal = Number(stats.pausedMs ?? 0) + pausedNow;
+  return Math.max(0, now - start - pausedTotal);
+}
+
+function formatElapsed(stats, now) {
+  const totalSeconds = Math.max(0, Math.floor(workedMilliseconds(stats, now) / 1000));
   const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
   const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
   const seconds = String(totalSeconds % 60).padStart(2, "0");
@@ -17,7 +24,7 @@ function formatMinutes(totalMinutes = 0) {
   return rest ? `${hours}h ${rest}min` : `${hours}h`;
 }
 
-export function ProductivityPanel({ user, productivity, onUpdate, onStart, onComplete }) {
+export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPause, onResume, onComplete }) {
   const current = productivity[user.id] ?? {
     currentFile: "",
     currentTask: "",
@@ -33,13 +40,14 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onCom
 
   const [draft, setDraft] = useState(current);
   const isStarted = Boolean(current.startedAt);
+  const isPaused = Boolean(current.pausedAt);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
-    if (!isStarted) return undefined;
+    if (!isStarted || isPaused) return undefined;
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, [isStarted]);
+  }, [isStarted, isPaused]);
 
   useEffect(() => {
     setDraft(current);
@@ -65,8 +73,8 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onCom
           <p className="helper-copy">Atualize o que voce esta fazendo. Isso alimenta ranking, odds e feed ao vivo.</p>
         </div>
         <div className="timer-card">
-          <span>Cronometro</span>
-          <strong>{formatElapsed(current.startedAt, now)}</strong>
+          <span>{isPaused ? "Pausado" : "Cronometro"}</span>
+          <strong>{formatElapsed(current, now)}</strong>
         </div>
       </div>
 
@@ -108,10 +116,22 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onCom
         <button type="button" onClick={() => onStart(draft)} disabled={isStarted || !draft.currentFile || !draft.currentTask}>
           Iniciar demanda
         </button>
+        {isStarted && !isPaused ? (
+          <button type="button" className="pause-button" onClick={onPause}>
+            Pausar
+          </button>
+        ) : null}
+        {isStarted && isPaused ? (
+          <button type="button" className="resume-button" onClick={onResume}>
+            Retomar
+          </button>
+        ) : null}
         <button type="button" className="complete-button" onClick={onComplete} disabled={!isStarted}>
           Finalizar demanda
         </button>
-        {isStarted ? <small>Demanda em andamento desde que foi iniciada.</small> : <small>Preencha material e tarefa para iniciar.</small>}
+        {isPaused ? <small>Demanda pausada. O tempo parado nao entra no cronometro.</small> : null}
+        {isStarted && !isPaused ? <small>Demanda em andamento desde que foi iniciada.</small> : null}
+        {!isStarted ? <small>Preencha material e tarefa para iniciar.</small> : null}
       </div>
 
     </section>
@@ -152,6 +172,7 @@ export function TeamProgress({ users, productivity }) {
                 <h3>{user.username}</h3>
                 <p>{stats.currentFile || "Sem arquivo definido"}</p>
                 <p>{stats.currentTask || "Aguardando tarefa"}</p>
+                {stats.startedAt ? <small>{stats.pausedAt ? "Pausado" : "Em andamento"}</small> : null}
               </div>
               <div className="progress-bar">
                 <span style={{ width: `${stats.progress ?? 0}%` }} />

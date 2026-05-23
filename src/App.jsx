@@ -453,6 +453,8 @@ function Dashboard({ state, setState, onLogout }) {
           progress: Number(draft.progress ?? 0),
           revisionStatus: draft.revisionStatus || "Em producao",
           startedAt: new Date().toISOString(),
+          pausedAt: null,
+          pausedMs: 0,
           updatedAt: new Date().toISOString()
         }
       },
@@ -460,10 +462,16 @@ function Dashboard({ state, setState, onLogout }) {
     }));
   }
 
-  function formatDuration(startedAt, finishedAt) {
-    const start = startedAt ? new Date(startedAt).getTime() : new Date(finishedAt).getTime();
+  function workedMilliseconds(stats, finishedAt) {
+    const start = stats.startedAt ? new Date(stats.startedAt).getTime() : new Date(finishedAt).getTime();
     const end = new Date(finishedAt).getTime();
-    const totalMinutes = Math.max(0, Math.round((end - start) / 60000));
+    const pausedUntilFinish = stats.pausedAt ? Math.max(0, end - new Date(stats.pausedAt).getTime()) : 0;
+    const pausedTotal = Number(stats.pausedMs ?? 0) + pausedUntilFinish;
+    return Math.max(0, end - start - pausedTotal);
+  }
+
+  function formatDuration(stats, finishedAt) {
+    const totalMinutes = Math.max(0, Math.round(workedMilliseconds(stats, finishedAt) / 60000));
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     if (hours && minutes) return `${hours}h ${minutes}min`;
@@ -473,12 +481,50 @@ function Dashboard({ state, setState, onLogout }) {
 
   function calculateEarlyBonus(stats, finishedAt) {
     const estimateMinutes = Math.max(0, Number(stats.estimateHours || 0) * 60);
-    const start = stats.startedAt ? new Date(stats.startedAt).getTime() : new Date(finishedAt).getTime();
-    const end = new Date(finishedAt).getTime();
-    const actualMinutes = Math.max(0, Math.round((end - start) / 60000));
+    const actualMinutes = Math.max(0, Math.round(workedMilliseconds(stats, finishedAt) / 60000));
     const savedMinutes = Math.max(0, Math.round(estimateMinutes - actualMinutes));
     const bonus = savedMinutes > 0 ? Math.max(1, Math.round(savedMinutes / 5)) : 0;
     return { estimateMinutes, actualMinutes, savedMinutes, bonus };
+  }
+
+  function pauseDemand() {
+    setState((current) => {
+      const stats = current.productivity?.[current.user.id] ?? {};
+      if (!stats.startedAt || stats.pausedAt) return current;
+      return {
+        ...current,
+        productivity: {
+          ...(current.productivity ?? {}),
+          [current.user.id]: {
+            ...stats,
+            pausedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        },
+        feed: [`${current.user.username} pausou a demanda`, ...current.feed].slice(0, 20)
+      };
+    });
+  }
+
+  function resumeDemand() {
+    setState((current) => {
+      const stats = current.productivity?.[current.user.id] ?? {};
+      if (!stats.startedAt || !stats.pausedAt) return current;
+      const pauseMs = Math.max(0, Date.now() - new Date(stats.pausedAt).getTime());
+      return {
+        ...current,
+        productivity: {
+          ...(current.productivity ?? {}),
+          [current.user.id]: {
+            ...stats,
+            pausedAt: null,
+            pausedMs: Number(stats.pausedMs ?? 0) + pauseMs,
+            updatedAt: new Date().toISOString()
+          }
+        },
+        feed: [`${current.user.username} retomou a demanda`, ...current.feed].slice(0, 20)
+      };
+    });
   }
 
   function placeFinishBet({ targetUserId, windowId, windowLabel, amount, odds }) {
@@ -517,12 +563,12 @@ function Dashboard({ state, setState, onLogout }) {
     setState((current) => {
       const stats = current.productivity?.[current.user.id] ?? {};
       const finishedAt = new Date().toISOString();
-      const winningWindow = classifyFinishWindow(stats.startedAt, finishedAt);
-      const durationLabel = formatDuration(stats.startedAt, finishedAt);
+      const winningWindow = classifyFinishWindow(stats, finishedAt);
+      const durationLabel = formatDuration(stats, finishedAt);
       const early = calculateEarlyBonus(stats, finishedAt);
       const finishBets = (current.finishBets ?? []).map((bet) =>
         bet.targetUserId === current.user.id && bet.status === "active"
-          ? { ...bet, status: "resolved", winningWindow, won: didFinishBetWin(bet, stats.startedAt, finishedAt), resolvedAt: finishedAt }
+          ? { ...bet, status: "resolved", winningWindow, won: didFinishBetWin(bet, stats, finishedAt), resolvedAt: finishedAt }
           : bet
       );
       const users = current.users.map((user) => {
@@ -558,6 +604,8 @@ function Dashboard({ state, setState, onLogout }) {
             completedFiles: (stats.completedFiles ?? 0) + 1,
             finishedAt,
             startedAt: null,
+            pausedAt: null,
+            pausedMs: 0,
             completedHistory: [
               {
                 id: makeId("completed-demand"),
@@ -566,6 +614,7 @@ function Dashboard({ state, setState, onLogout }) {
                 topics: Number(stats.targetTopics) || 1,
                 progress: stats.progress,
                 startedAt: stats.startedAt,
+                pausedMs: Number(stats.pausedMs ?? 0) + (stats.pausedAt ? Math.max(0, new Date(finishedAt).getTime() - new Date(stats.pausedAt).getTime()) : 0),
                 finishedAt,
                 estimateMinutes: early.estimateMinutes,
                 actualMinutes: early.actualMinutes,
@@ -653,6 +702,8 @@ function Dashboard({ state, setState, onLogout }) {
             productivity={productivity}
             onUpdate={updateProductivity}
             onStart={startDemand}
+            onPause={pauseDemand}
+            onResume={resumeDemand}
             onComplete={completeDemand}
           />
           <CompletedDemands user={state.user} productivity={productivity} />

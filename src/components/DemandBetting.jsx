@@ -31,27 +31,31 @@ function windowOdds({ windowId, bets, targetProgress }) {
   return Number(Math.max(1.2, Math.min(6.5, base + lonelyBonus + progressEffect - popularityPenalty)).toFixed(1));
 }
 
-export function classifyFinishWindow(startedAt, finishedAt = new Date().toISOString()) {
-  const start = startedAt ? new Date(startedAt).getTime() : new Date(finishedAt).getTime();
+function workedMinutes(input, finishedAt = new Date().toISOString()) {
+  const stats = typeof input === "object" && input !== null ? input : { startedAt: input };
+  const start = stats.startedAt ? new Date(stats.startedAt).getTime() : new Date(finishedAt).getTime();
   const end = new Date(finishedAt).getTime();
-  const hours = Math.max(0, (end - start) / 36e5);
+  const pausedUntilFinish = stats.pausedAt ? Math.max(0, end - new Date(stats.pausedAt).getTime()) : 0;
+  const pausedTotal = Number(stats.pausedMs ?? 0) + pausedUntilFinish;
+  return Math.max(0, Math.round((end - start - pausedTotal) / 60000));
+}
+
+export function classifyFinishWindow(stats, finishedAt = new Date().toISOString()) {
+  const hours = workedMinutes(stats, finishedAt) / 60;
   if (hours < 1) return "under-1h";
   if (hours < 2) return "1-2h";
   if (hours < 4) return "2-4h";
   return "over-4h";
 }
 
-export function didFinishBetWin(bet, startedAt, finishedAt) {
-  const start = startedAt ? new Date(startedAt).getTime() : new Date(finishedAt).getTime();
-  const end = new Date(finishedAt).getTime();
-  const minutes = Math.max(0, Math.round((end - start) / 60000));
-
+export function didFinishBetWin(bet, stats, finishedAt) {
+  const minutes = workedMinutes(stats, finishedAt);
   if (bet.windowId?.startsWith("custom-")) {
     const guessed = Number(bet.windowId.replace("custom-", "").replace("m", ""));
     return Math.abs(minutes - guessed) <= 15;
   }
 
-  return bet.windowId === classifyFinishWindow(startedAt, finishedAt);
+  return bet.windowId === classifyFinishWindow(stats, finishedAt);
 }
 
 export function DemandBetting({ user, users, productivity, finishBets, onBet }) {
@@ -124,6 +128,7 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
               <div>
                 <strong>{target.username}</strong>
                 <p>{targetStats.currentFile || "Sem arquivo definido"} / {targetStats.currentTask || "Sem tarefa definida"}</p>
+                <small>{targetStats.pausedAt ? "Demanda pausada, cronometro congelado" : "Demanda rodando"}</small>
                 <div className="progress-bar"><span style={{ width: `${targetStats.progress ?? 0}%` }} /></div>
               </div>
             </div>
