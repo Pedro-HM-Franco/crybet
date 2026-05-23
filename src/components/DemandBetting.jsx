@@ -40,6 +40,11 @@ function workedMinutes(input, finishedAt = new Date().toISOString()) {
   return Math.max(0, Math.round((end - start - pausedTotal) / 60000));
 }
 
+function isBetForCurrentDemand(bet, startedAt) {
+  if (!startedAt || !bet.createdAt) return false;
+  return new Date(bet.createdAt).getTime() >= new Date(startedAt).getTime();
+}
+
 export function classifyFinishWindow(stats, finishedAt = new Date().toISOString()) {
   const hours = workedMinutes(stats, finishedAt) / 60;
   if (hours < 1) return "under-1h";
@@ -76,9 +81,15 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
 
   const target = users.find((item) => item.id === targetId);
   const targetStats = productivity[targetId] ?? {};
-  const activeBets = finishBets.filter((bet) => bet.targetUserId === targetId && bet.status === "active");
+  const activeBets = finishBets.filter(
+    (bet) => bet.targetUserId === targetId && bet.status === "active" && isBetForCurrentDemand(bet, targetStats.startedAt)
+  );
   const existingBet = finishBets.find(
-    (bet) => bet.targetUserId === targetId && bet.bettorId === user.id && bet.status === "active"
+    (bet) =>
+      bet.targetUserId === targetId &&
+      bet.bettorId === user.id &&
+      bet.status === "active" &&
+      isBetForCurrentDemand(bet, targetStats.startedAt)
   );
   const customTotalMinutes = Number(customHours || 0) * 60 + Number(customMinutes || 0);
   const balance = user.enfecoins ?? 0;

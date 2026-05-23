@@ -15,6 +15,12 @@ function money(value) {
   return Math.round(value ?? 0);
 }
 
+function betMatchesCurrentDemand(bet, productivity) {
+  const targetStartedAt = productivity?.[bet.targetUserId]?.startedAt;
+  if (!targetStartedAt || !bet.createdAt) return false;
+  return new Date(bet.createdAt).getTime() >= new Date(targetStartedAt).getTime();
+}
+
 function calcOdds(competition, optionId, users = [], productivity = {}) {
   const total = Math.max(competition.bets.length, 1);
   const optionBets = competition.bets.filter((bet) => bet.optionId === optionId).length;
@@ -289,7 +295,10 @@ function PlayerProfile({ user, productivity, finishBets, onRename }) {
   const stats = productivity?.[user.id] ?? {};
   const history = stats.completedHistory ?? [];
   const activeUserBets = (finishBets ?? []).filter(
-    (bet) => bet.status === "active" && (bet.bettorId === user.id || bet.targetUserId === user.id)
+    (bet) =>
+      bet.status === "active" &&
+      (bet.bettorId === user.id || bet.targetUserId === user.id) &&
+      betMatchesCurrentDemand(bet, productivity)
   );
 
   useEffect(() => {
@@ -464,27 +473,40 @@ function Dashboard({ state, setState, onLogout }) {
   }
 
   function startDemand(draft) {
-    setState((current) => ({
-      ...current,
-      productivity: {
-        ...(current.productivity ?? {}),
-        [current.user.id]: {
-          ...(current.productivity?.[current.user.id] ?? {}),
-          ...draft,
-          progress: Number(draft.progress ?? 0),
-          revisionStatus: draft.revisionStatus || "Em produção",
-          startedAt: new Date().toISOString(),
-          pausedAt: null,
-          pausedMs: 0,
-          updatedAt: new Date().toISOString()
-        }
-      },
-      feed: [
-        `${current.user.username} iniciou ${draft.currentFile} com ${Number(draft.targetTopics) || 1} tópicos planejados`,
-        `Prazo inicial de ${current.user.username}: ${Number(draft.estimateHours || 1)}h`,
-        ...current.feed
-      ].slice(0, 20)
-    }));
+    setState((current) => {
+      const startedAt = new Date().toISOString();
+      const staleBets = (current.finishBets ?? []).filter(
+        (bet) => bet.targetUserId === current.user.id && bet.status === "active"
+      );
+
+      return {
+        ...current,
+        finishBets: (current.finishBets ?? []).map((bet) =>
+          bet.targetUserId === current.user.id && bet.status === "active"
+            ? { ...bet, status: "expired", expiredAt: startedAt }
+            : bet
+        ),
+        productivity: {
+          ...(current.productivity ?? {}),
+          [current.user.id]: {
+            ...(current.productivity?.[current.user.id] ?? {}),
+            ...draft,
+            progress: Number(draft.progress ?? 0),
+            revisionStatus: draft.revisionStatus || "Em produção",
+            startedAt,
+            pausedAt: null,
+            pausedMs: 0,
+            updatedAt: startedAt
+          }
+        },
+        feed: [
+          `${current.user.username} iniciou ${draft.currentFile} com ${Number(draft.targetTopics) || 1} tópicos planejados`,
+          `Prazo inicial de ${current.user.username}: ${Number(draft.estimateHours || 1)}h`,
+          staleBets.length ? `${staleBets.length} palpites antigos foram liberados para a nova demanda` : null,
+          ...current.feed
+        ].filter(Boolean).slice(0, 20)
+      };
+    });
   }
 
   function workedMilliseconds(stats, finishedAt) {
@@ -516,6 +538,11 @@ function Dashboard({ state, setState, onLogout }) {
     const targetTopics = Math.max(1, Number(stats.targetTopics) || 1);
     const finishedOnTime = early.estimateMinutes > 0 && early.actualMinutes <= early.estimateMinutes;
     return finishedOnTime ? Math.max(5, targetTopics * 2) : 0;
+  }
+
+  function isBetForStartedDemand(bet, startedAt) {
+    if (!startedAt || !bet.createdAt) return false;
+    return new Date(bet.createdAt).getTime() >= new Date(startedAt).getTime();
   }
 
   function pauseDemand() {
@@ -593,7 +620,10 @@ function Dashboard({ state, setState, onLogout }) {
 
       const canceledAt = new Date().toISOString();
       const activeBets = (current.finishBets ?? []).filter(
-        (bet) => bet.targetUserId === current.user.id && bet.status === "active"
+        (bet) =>
+          bet.targetUserId === current.user.id &&
+          bet.status === "active" &&
+          isBetForStartedDemand(bet, stats.startedAt)
       );
       const refundedUsers = current.users.map((user) => {
         const refund = activeBets
@@ -607,7 +637,7 @@ function Dashboard({ state, setState, onLogout }) {
         users: refundedUsers,
         user: refundedUsers.find((user) => user.id === current.user.id) ?? current.user,
         finishBets: (current.finishBets ?? []).map((bet) =>
-          bet.targetUserId === current.user.id && bet.status === "active"
+          bet.targetUserId === current.user.id && bet.status === "active" && isBetForStartedDemand(bet, stats.startedAt)
             ? { ...bet, status: "canceled", canceledAt, refunded: true }
             : bet
         ),
@@ -639,17 +669,23 @@ function Dashboard({ state, setState, onLogout }) {
   function placeFinishBet({ targetUserId, windowId, windowLabel, amount, odds }) {
     setState((current) => {
       const target = current.users.find((user) => user.id === targetUserId);
+      const targetStats = current.productivity?.[targetUserId] ?? {};
       const already = (current.finishBets ?? []).some(
-        (bet) => bet.bettorId === current.user.id && bet.targetUserId === targetUserId && bet.status === "active"
+        (bet) =>
+          bet.bettorId === current.user.id &&
+          bet.targetUserId === targetUserId &&
+          bet.status === "active" &&
+          isBetForStartedDemand(bet, targetStats.startedAt)
       );
       const currentBalance = current.user.enfecoins ?? 0;
-      if (!target || already || currentBalance < amount) return current;
+      if (!target || !targetStats.startedAt || already || currentBalance < amount) return current;
       const bet = {
         id: makeId("finish-bet"),
         bettorId: current.user.id,
         bettorName: current.user.username,
         targetUserId,
         targetName: target.username,
+        targetStartedAt: targetStats.startedAt,
         windowId,
         windowLabel,
         amount,
@@ -678,7 +714,7 @@ function Dashboard({ state, setState, onLogout }) {
       const onTimeBonus = calculateOnTimeBonus(stats, early);
       const producerBonus = early.bonus + onTimeBonus;
       const finishBets = (current.finishBets ?? []).map((bet) =>
-        bet.targetUserId === current.user.id && bet.status === "active"
+        bet.targetUserId === current.user.id && bet.status === "active" && isBetForStartedDemand(bet, stats.startedAt)
           ? { ...bet, status: "resolved", winningWindow, won: didFinishBetWin(bet, stats, finishedAt), resolvedAt: finishedAt }
           : bet
       );
