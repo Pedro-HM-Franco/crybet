@@ -32,6 +32,15 @@ function normalizeDemandBets(state) {
   return { ...state, finishBets };
 }
 
+function applyCloudState(current, cloudState) {
+  const syncedUser = cloudState.users?.find((user) => user.id === current.user?.id);
+  return normalizeDemandBets({
+    ...current,
+    ...cloudState,
+    user: syncedUser ? { ...syncedUser, active: true } : current.user
+  });
+}
+
 function calcOdds(competition, optionId, users = [], productivity = {}) {
   const total = Math.max(competition.bets.length, 1);
   const optionBets = competition.bets.filter((bet) => bet.optionId === optionId).length;
@@ -680,37 +689,39 @@ function Dashboard({ state, setState, onLogout }) {
   function placeFinishBet({ targetUserId, windowId, windowLabel, amount, odds }) {
     setState((current) => {
       const target = current.users.find((user) => user.id === targetUserId);
+      const bettor = current.users.find((user) => user.id === current.user.id) ?? current.user;
       const targetStats = current.productivity?.[targetUserId] ?? {};
+      const betAmount = Math.max(1, Number(amount) || 1);
       const already = (current.finishBets ?? []).some(
         (bet) =>
-          bet.bettorId === current.user.id &&
+          bet.bettorId === bettor.id &&
           bet.targetUserId === targetUserId &&
           bet.status === "active" &&
           isBetForStartedDemand(bet, targetStats.startedAt)
       );
-      const currentBalance = current.user.enfecoins ?? 0;
-      if (!target || !targetStats.startedAt || already || currentBalance < amount) return current;
+      const currentBalance = bettor.enfecoins ?? 0;
+      if (!target || !targetStats.startedAt || already || currentBalance < betAmount) return current;
       const bet = {
         id: makeId("finish-bet"),
-        bettorId: current.user.id,
-        bettorName: current.user.username,
+        bettorId: bettor.id,
+        bettorName: bettor.username,
         targetUserId,
         targetName: target.username,
         targetStartedAt: targetStats.startedAt,
         windowId,
         windowLabel,
-        amount,
+        amount: betAmount,
         odds,
         status: "active",
         createdAt: new Date().toISOString()
       };
       return {
         ...current,
-        user: { ...current.user, enfecoins: currentBalance - amount },
-        users: current.users.map((user) => user.id === current.user.id ? { ...user, enfecoins: user.enfecoins - amount } : user),
+        user: { ...current.user, username: bettor.username, enfecoins: currentBalance - betAmount },
+        users: current.users.map((user) => user.id === bettor.id ? { ...user, enfecoins: currentBalance - betAmount } : user),
         finishBets: [...(current.finishBets ?? []), bet],
-        totalCoinFlow: current.totalCoinFlow + amount,
-        feed: [`${current.user.username} acreditou em ${target.username}`, ...current.feed].slice(0, 20)
+        totalCoinFlow: current.totalCoinFlow + betAmount,
+        feed: [`${bettor.username} acreditou em ${target.username}`, ...current.feed].slice(0, 20)
       };
     });
   }
@@ -936,7 +947,7 @@ export default function App() {
       lastCloudSnapshot.current = JSON.stringify(cloudState);
       applyingRemote.current = true;
       setState((current) => {
-        const normalized = normalizeDemandBets({ ...current, ...cloudState, user: current.user });
+        const normalized = applyCloudState(current, cloudState);
         const normalizedSnapshot = JSON.stringify(toCloudState(normalized));
         if (normalizedSnapshot !== JSON.stringify(cloudState)) {
           lastCloudSnapshot.current = normalizedSnapshot;
@@ -950,7 +961,7 @@ export default function App() {
       lastCloudSnapshot.current = JSON.stringify(cloudState);
       applyingRemote.current = true;
       setState((current) => {
-        const normalized = normalizeDemandBets({ ...current, ...cloudState, user: current.user });
+        const normalized = applyCloudState(current, cloudState);
         const normalizedSnapshot = JSON.stringify(toCloudState(normalized));
         if (normalizedSnapshot !== JSON.stringify(cloudState)) {
           lastCloudSnapshot.current = normalizedSnapshot;
