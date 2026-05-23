@@ -39,7 +39,7 @@ function deadlineInfo(stats, now) {
   };
 }
 
-export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPause, onResume, onCancel, onComplete }) {
+export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPause, onResume, onExtend, onCancel, onComplete }) {
   const current = productivity[user.id] ?? {
     currentFile: "",
     currentTask: "",
@@ -57,6 +57,8 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPau
   const isStarted = Boolean(current.startedAt);
   const isPaused = Boolean(current.pausedAt);
   const [now, setNow] = useState(Date.now());
+  const [extraHours, setExtraHours] = useState(0.5);
+  const currentDeadline = isStarted ? deadlineInfo(current, now) : null;
 
   useEffect(() => {
     if (!isStarted || isPaused) return undefined;
@@ -147,6 +149,17 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPau
         <button type="button" className="cancel-button" onClick={onCancel} disabled={!isStarted}>
           Cancelar demanda
         </button>
+        {currentDeadline?.overdue ? (
+          <div className="extend-deadline">
+            <label>
+              Adicionar prazo
+              <input type="number" min="0.25" step="0.25" value={extraHours} onChange={(event) => setExtraHours(Number(event.target.value) || 0.25)} />
+            </label>
+            <button type="button" onClick={() => onExtend(extraHours)}>
+              Adicionar {extraHours}h
+            </button>
+          </div>
+        ) : null}
         {isPaused ? <small>Demanda pausada. O tempo parado não entra no cronômetro.</small> : null}
         {isStarted && !isPaused ? <small>Demanda em andamento desde que foi iniciada.</small> : null}
         {!isStarted ? <small>Preencha material e tarefa para iniciar.</small> : null}

@@ -283,9 +283,14 @@ function WhoBetWhat({ users, competitions }) {
   );
 }
 
-function PlayerProfile({ user, onRename }) {
+function PlayerProfile({ user, productivity, finishBets, onRename }) {
   const [name, setName] = useState(user.username);
   const [open, setOpen] = useState(false);
+  const stats = productivity?.[user.id] ?? {};
+  const history = stats.completedHistory ?? [];
+  const activeUserBets = (finishBets ?? []).filter(
+    (bet) => bet.status === "active" && (bet.bettorId === user.id || bet.targetUserId === user.id)
+  );
 
   useEffect(() => {
     setName(user.username);
@@ -320,6 +325,22 @@ function PlayerProfile({ user, onRename }) {
           <button type="submit">Salvar nome</button>
         </form>
       ) : null}
+      <div className="profile-detail-grid">
+        <span>Demandas concluídas: {user.completedDemands ?? 0}</span>
+        <span>Bônus velocidade: {money(user.speedBonusWon ?? 0)}</span>
+        <span>Moedas ganhas: {money(user.totalWon ?? 0)}</span>
+        <span>Palpites ativos: {activeUserBets.length}</span>
+      </div>
+      <div className="profile-history">
+        <strong>Últimas demandas</strong>
+        {!history.length ? <p>Nenhuma demanda concluída ainda.</p> : null}
+        {history.slice(0, 3).map((item) => (
+          <article key={item.id}>
+            <span>{item.file || "Demanda sem nome"}</span>
+            <small>{item.durationLabel} / {item.topics ?? 1} tópicos</small>
+          </article>
+        ))}
+      </div>
     </section>
   );
 }
@@ -458,7 +479,11 @@ function Dashboard({ state, setState, onLogout }) {
           updatedAt: new Date().toISOString()
         }
       },
-      feed: [`${current.user.username} iniciou a demanda: ${draft.currentFile}`, ...current.feed].slice(0, 20)
+      feed: [
+        `${current.user.username} iniciou ${draft.currentFile} com ${Number(draft.targetTopics) || 1} tópicos planejados`,
+        `Prazo inicial de ${current.user.username}: ${Number(draft.estimateHours || 1)}h`,
+        ...current.feed
+      ].slice(0, 20)
     }));
   }
 
@@ -523,6 +548,34 @@ function Dashboard({ state, setState, onLogout }) {
           }
         },
         feed: [`${current.user.username} retomou a demanda`, ...current.feed].slice(0, 20)
+      };
+    });
+  }
+
+  function extendDemand(additionalHours) {
+    setState((current) => {
+      const stats = current.productivity?.[current.user.id] ?? {};
+      const hours = Math.max(0.25, Number(additionalHours) || 0.25);
+      if (!stats.startedAt) return current;
+      const previousEstimate = Number(stats.estimateHours || 1);
+      const nextEstimate = Number((previousEstimate + hours).toFixed(2));
+      return {
+        ...current,
+        productivity: {
+          ...(current.productivity ?? {}),
+          [current.user.id]: {
+            ...stats,
+            estimateHours: nextEstimate,
+            extensionCount: (stats.extensionCount ?? 0) + 1,
+            extensionHours: Number(((stats.extensionHours ?? 0) + hours).toFixed(2)),
+            updatedAt: new Date().toISOString()
+          }
+        },
+        feed: [
+          `${current.user.username} adicionou ${hours}h ao prazo da demanda`,
+          `Novo prazo de ${current.user.username}: ${nextEstimate}h no total`,
+          ...current.feed
+        ].slice(0, 20)
       };
     });
   }
@@ -604,7 +657,7 @@ function Dashboard({ state, setState, onLogout }) {
         users: current.users.map((user) => user.id === current.user.id ? { ...user, enfecoins: user.enfecoins - amount } : user),
         finishBets: [...(current.finishBets ?? []), bet],
         totalCoinFlow: current.totalCoinFlow + amount,
-        feed: [`${current.user.username} apostou quando ${target.username} termina a demanda`, ...current.feed].slice(0, 20)
+        feed: [`${current.user.username} apostou ${amount} ENFECOINS que ${target.username} termina em ${windowLabel}`, ...current.feed].slice(0, 20)
       };
     });
   }
@@ -621,6 +674,8 @@ function Dashboard({ state, setState, onLogout }) {
           ? { ...bet, status: "resolved", winningWindow, won: didFinishBetWin(bet, stats, finishedAt), resolvedAt: finishedAt }
           : bet
       );
+      const resolvedBets = finishBets.filter((bet) => bet.targetUserId === current.user.id && bet.resolvedAt === finishedAt);
+      const wonCount = resolvedBets.filter((bet) => bet.won).length;
       const users = current.users.map((user) => {
         const wonBets = finishBets.filter((bet) => bet.bettorId === user.id && bet.resolvedAt === finishedAt && bet.won);
         const reward = wonBets.reduce((sum, bet) => sum + Math.round(bet.amount * bet.odds), 0);
@@ -686,7 +741,7 @@ function Dashboard({ state, setState, onLogout }) {
           early.bonus ? `${current.user.username} ganhou ${early.bonus} ENFECOINS por terminar antes do tempo` : `${current.user.username} terminou sem bônus de velocidade`,
           `${current.user.username} finalizou a demanda em ${durationLabel}`,
           `${current.user.username} concluiu ${Number(stats.targetTopics) || 1} tópicos`,
-          `Janela vencedora: ${winningWindow}`,
+          resolvedBets.length ? `${wonCount} de ${resolvedBets.length} palpites acertaram a janela ${winningWindow}` : "Nenhum palpite ativo nessa demanda",
           ...current.feed
         ].slice(0, 20)
       };
@@ -754,6 +809,7 @@ function Dashboard({ state, setState, onLogout }) {
             onStart={startDemand}
             onPause={pauseDemand}
             onResume={resumeDemand}
+            onExtend={extendDemand}
             onCancel={cancelDemand}
             onComplete={completeDemand}
           />
@@ -770,7 +826,7 @@ function Dashboard({ state, setState, onLogout }) {
         </div>
 
         <aside className="side-stack">
-          <PlayerProfile user={userProfile} onRename={renameUser} />
+          <PlayerProfile user={userProfile} productivity={productivity} finishBets={state.finishBets ?? []} onRename={renameUser} />
 
           <section className="section-card compact-profile">
             <p className="eyebrow">Estatísticas do jogador</p>

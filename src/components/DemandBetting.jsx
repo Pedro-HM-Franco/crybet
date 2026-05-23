@@ -134,6 +134,21 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
             </div>
           ) : null}
 
+          <div className="active-bets-panel">
+            <div>
+              <span className="field-title">Palpites ativos nesta demanda</span>
+              <p>Veja quem apostou em quem antes da demanda terminar.</p>
+            </div>
+            {!activeBets.length ? <small>Ninguém apostou nessa demanda ainda.</small> : null}
+            {activeBets.map((bet) => (
+              <article key={bet.id}>
+                <strong>{bet.bettorName}</strong>
+                <span>{bet.windowLabel || bet.windowId}</span>
+                <em>{bet.amount} ENFECOINS / x{bet.odds}</em>
+              </article>
+            ))}
+          </div>
+
           {existingBet ? (
             <div className="locked-bet">
               <span>Palpite travado</span>

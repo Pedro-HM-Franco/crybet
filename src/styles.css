@@ -529,6 +529,40 @@ input:focus, textarea:focus, select:focus {
   font-weight: 950;
   text-transform: uppercase;
 }
+.profile-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+.profile-detail-grid span,
+.profile-history article {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,.045);
+  color: var(--muted);
+  padding: 9px;
+  font-size: .78rem;
+  font-weight: 800;
+}
+.profile-history {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+.profile-history strong {
+  color: var(--cyan);
+}
+.profile-history p,
+.profile-history small {
+  margin: 0;
+  color: var(--muted);
+}
+.profile-history article span {
+  display: block;
+  color: var(--text);
+  font-weight: 900;
+}
 .profile-stats, .market-stats {
   display: flex;
   flex-wrap: wrap;
@@ -601,6 +635,29 @@ input:focus, textarea:focus, select:focus {
 }
 .cancel-button {
   background: linear-gradient(135deg, #334155, #ef4444) !important;
+  color: white !important;
+}
+.extend-deadline {
+  display: grid;
+  grid-template-columns: 150px auto;
+  gap: 10px;
+  align-items: end;
+  width: 100%;
+  border: 1px solid rgba(248, 113, 113, 0.26);
+  border-radius: 14px;
+  background: rgba(248, 113, 113, 0.08);
+  padding: 12px;
+}
+.extend-deadline label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.extend-deadline button {
+  background: linear-gradient(135deg, var(--orange), var(--purple)) !important;
   color: white !important;
 }
 .demand-betting {
@@ -737,6 +794,40 @@ input:focus, textarea:focus, select:focus {
 .locked-bet em {
   color: var(--cyan);
   font-style: normal;
+}
+.active-bets-panel {
+  display: grid;
+  gap: 9px;
+  margin: 14px 0;
+  border: 1px solid rgba(103,232,249,.22);
+  border-radius: 18px;
+  background: rgba(103,232,249,.06);
+  padding: 14px;
+}
+.active-bets-panel p,
+.active-bets-panel small {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+.active-bets-panel article {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,.045);
+  padding: 10px;
+  font-size: .82rem;
+}
+.active-bets-panel article span {
+  color: var(--cyan);
+  font-weight: 900;
+}
+.active-bets-panel article em {
+  color: var(--green);
+  font-style: normal;
+  font-weight: 900;
 }
 .secondary-section {
   opacity: .92;
