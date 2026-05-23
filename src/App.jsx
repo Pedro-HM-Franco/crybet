@@ -729,7 +729,11 @@ function Dashboard({ state, setState, onLogout }) {
   function completeDemand() {
     setState((current) => {
       const stats = current.productivity?.[current.user.id] ?? {};
+      if (!stats.startedAt) return current;
       const finishedAt = new Date().toISOString();
+      const pausedMsAtFinish = Number(stats.pausedMs ?? 0) + (
+        stats.pausedAt ? Math.max(0, new Date(finishedAt).getTime() - new Date(stats.pausedAt).getTime()) : 0
+      );
       const winningWindow = classifyFinishWindow(stats, finishedAt);
       const durationLabel = formatDuration(stats, finishedAt);
       const early = calculateEarlyBonus(stats, finishedAt);
@@ -788,7 +792,7 @@ function Dashboard({ state, setState, onLogout }) {
                 topics: Number(stats.targetTopics) || 1,
                 progress: stats.progress,
                 startedAt: stats.startedAt,
-                pausedMs: Number(stats.pausedMs ?? 0) + (stats.pausedAt ? Math.max(0, new Date(finishedAt).getTime() - new Date(stats.pausedAt).getTime()) : 0),
+                pausedMs: pausedMsAtFinish,
                 finishedAt,
                 estimateMinutes: early.estimateMinutes,
                 actualMinutes: early.actualMinutes,

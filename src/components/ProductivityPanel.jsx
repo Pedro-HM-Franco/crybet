@@ -56,6 +56,7 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPau
   const [draft, setDraft] = useState(current);
   const isStarted = Boolean(current.startedAt);
   const isPaused = Boolean(current.pausedAt);
+  const [isFinishing, setIsFinishing] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [extraHours, setExtraHours] = useState(0.5);
   const currentDeadline = isStarted ? deadlineInfo(current, now) : null;
@@ -68,13 +69,15 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPau
 
   useEffect(() => {
     setDraft(current);
+    setIsFinishing(false);
   }, [
     current.currentFile,
     current.currentTask,
     current.progress,
     current.estimateHours,
     current.targetTopics,
-    current.revisionStatus
+    current.revisionStatus,
+    current.startedAt
   ]);
 
   function update(field, value) {
@@ -143,8 +146,16 @@ export function ProductivityPanel({ user, productivity, onUpdate, onStart, onPau
             Retomar
           </button>
         ) : null}
-        <button type="button" className="complete-button" onClick={onComplete} disabled={!isStarted}>
-          Finalizar demanda
+        <button
+          type="button"
+          className="complete-button"
+          onClick={() => {
+            setIsFinishing(true);
+            onComplete();
+          }}
+          disabled={!isStarted || isFinishing}
+        >
+          {isFinishing ? "Finalizando..." : "Finalizar demanda"}
         </button>
         <button type="button" className="cancel-button" onClick={onCancel} disabled={!isStarted}>
           Cancelar demanda
