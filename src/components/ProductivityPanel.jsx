@@ -225,8 +225,8 @@ export function TeamProgress({ users, productivity }) {
               <small className={deadline?.overdue ? "deadline-status overdue" : "deadline-status"}>
                 {deadline
                   ? deadline.overdue
-                    ? `Tempo ultrapassado: ${deadline.overdueLabel} além do previsto`
-                    : `${deadline.percent}% do prazo usado (${deadline.workedLabel} de ${deadline.estimateLabel})`
+                    ? "Tempo ultrapassado"
+                    : `${deadline.percent}% do prazo usado`
                   : `Sem demanda ativa / ${stats.revisionStatus ?? "Sem status"}`}
               </small>
             </article>
