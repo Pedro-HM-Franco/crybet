@@ -676,6 +676,9 @@ function Dashboard({ state, setState, onLogout }) {
       );
       const resolvedBets = finishBets.filter((bet) => bet.targetUserId === current.user.id && bet.resolvedAt === finishedAt);
       const wonCount = resolvedBets.filter((bet) => bet.won).length;
+      const winnerFeed = resolvedBets
+        .filter((bet) => bet.won)
+        .map((bet) => `${bet.bettorName} ganhou ${Math.round(bet.amount * bet.odds)} ENFECOINS apostando em ${bet.targetName} (${bet.windowLabel || bet.windowId})`);
       const users = current.users.map((user) => {
         const wonBets = finishBets.filter((bet) => bet.bettorId === user.id && bet.resolvedAt === finishedAt && bet.won);
         const reward = wonBets.reduce((sum, bet) => sum + Math.round(bet.amount * bet.odds), 0);
@@ -741,6 +744,7 @@ function Dashboard({ state, setState, onLogout }) {
           early.bonus ? `${current.user.username} ganhou ${early.bonus} ENFECOINS por terminar antes do tempo` : `${current.user.username} terminou sem bônus de velocidade`,
           `${current.user.username} finalizou a demanda em ${durationLabel}`,
           `${current.user.username} concluiu ${Number(stats.targetTopics) || 1} tópicos`,
+          ...winnerFeed.slice(0, 5),
           resolvedBets.length ? `${wonCount} de ${resolvedBets.length} palpites acertaram a janela ${winningWindow}` : "Nenhum palpite ativo nessa demanda",
           ...current.feed
         ].slice(0, 20)
