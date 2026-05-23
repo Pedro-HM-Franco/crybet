@@ -45,6 +45,10 @@ function makeFeedId(message, index) {
   return `feed-${index}-${Math.abs(hash)}`;
 }
 
+function demandHistoryKey(item) {
+  return [item.startedAt, item.file ?? "", item.task ?? ""].join("|");
+}
+
 async function loadLegacyCloudState() {
   const { data, error } = await supabase.from("crybet_state").select("data").eq("id", LEGACY_ROW_ID).maybeSingle();
   if (error) {
@@ -124,9 +128,11 @@ export async function loadCloudState() {
     }
   }
 
+  const completedKeysByUser = {};
   const completedByUser = (completedResult.data ?? {}).reduce ? (completedResult.data ?? []).reduce((acc, row) => {
     acc[row.user_id] = acc[row.user_id] ?? [];
-    acc[row.user_id].push({
+    completedKeysByUser[row.user_id] = completedKeysByUser[row.user_id] ?? new Set();
+    const item = {
       id: row.id,
       file: row.file ?? "",
       task: row.task ?? "",
@@ -141,7 +147,12 @@ export async function loadCloudState() {
       speedBonus: row.speed_bonus ?? 0,
       finishedAtLabel: row.finished_at_label,
       durationLabel: row.duration_label
-    });
+    };
+    const key = demandHistoryKey(item);
+    if (!completedKeysByUser[row.user_id].has(key)) {
+      completedKeysByUser[row.user_id].add(key);
+      acc[row.user_id].push(item);
+    }
     return acc;
   }, {}) : {};
 

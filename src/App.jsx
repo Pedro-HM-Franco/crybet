@@ -15,6 +15,15 @@ function money(value) {
   return Math.round(value ?? 0);
 }
 
+function demandHistoryKey(item) {
+  return [item.startedAt, item.file ?? "", item.task ?? ""].join("|");
+}
+
+function completedDemandId(userId, startedAt) {
+  const startedTime = new Date(startedAt).getTime();
+  return Number.isNaN(startedTime) ? makeId("completed-demand") : `completed-demand-${userId}-${startedTime}`;
+}
+
 function betMatchesCurrentDemand(bet, productivity) {
   const targetStartedAt = productivity?.[bet.targetUserId]?.startedAt;
   if (!targetStartedAt || !bet.createdAt) return false;
@@ -730,6 +739,33 @@ function Dashboard({ state, setState, onLogout }) {
     setState((current) => {
       const stats = current.productivity?.[current.user.id] ?? {};
       if (!stats.startedAt) return current;
+      const currentDemandKey = demandHistoryKey({
+        startedAt: stats.startedAt,
+        file: stats.currentFile,
+        task: stats.currentTask
+      });
+      const alreadyCompleted = (stats.completedHistory ?? []).some((item) => demandHistoryKey(item) === currentDemandKey);
+      if (alreadyCompleted) {
+        return {
+          ...current,
+          productivity: {
+            ...(current.productivity ?? {}),
+            [current.user.id]: {
+              ...stats,
+              currentFile: "",
+              currentTask: "",
+              estimateHours: 1,
+              targetTopics: 1,
+              progress: 0,
+              revisionStatus: "Em produção",
+              startedAt: null,
+              pausedAt: null,
+              pausedMs: 0
+            }
+          },
+          feed: [`${current.user.username} limpou uma demanda que já estava finalizada`, ...current.feed].slice(0, 20)
+        };
+      }
       const finishedAt = new Date().toISOString();
       const pausedMsAtFinish = Number(stats.pausedMs ?? 0) + (
         stats.pausedAt ? Math.max(0, new Date(finishedAt).getTime() - new Date(stats.pausedAt).getTime()) : 0
@@ -786,7 +822,7 @@ function Dashboard({ state, setState, onLogout }) {
             pausedMs: 0,
             completedHistory: [
               {
-                id: makeId("completed-demand"),
+                id: completedDemandId(current.user.id, stats.startedAt),
                 file: stats.currentFile,
                 task: stats.currentTask,
                 topics: Number(stats.targetTopics) || 1,
@@ -808,7 +844,7 @@ function Dashboard({ state, setState, onLogout }) {
                 }).format(new Date(finishedAt)),
                 durationLabel
               },
-              ...(stats.completedHistory ?? [])
+              ...(stats.completedHistory ?? []).filter((item) => demandHistoryKey(item) !== currentDemandKey)
             ].slice(0, 20)
           }
         },
