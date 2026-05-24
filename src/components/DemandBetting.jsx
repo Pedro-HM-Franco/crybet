@@ -177,8 +177,7 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet, on
             {activeBets.map((bet) => (
               <article key={bet.id}>
                 <strong>{bet.bettorName}</strong>
-                <span>{bet.windowLabel || bet.windowId}</span>
-                <em>{bet.amount} ENFECOINS / x{bet.odds}</em>
+                <span>investiu nesta demanda</span>
               </article>
             ))}
           </div>
