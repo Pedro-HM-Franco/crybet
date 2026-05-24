@@ -597,6 +597,7 @@ function Dashboard({ state, setState, onLogout }) {
         },
         feed: [
           `${current.user.username} iniciou ${draft.currentFile} com ${Number(draft.targetTopics) || 1} tópicos planejados`,
+          `Prazo inicial de ${current.user.username}: ${Number(draft.estimateHours || 1)}h`,
           staleBets.length ? `${staleBets.length} palpites antigos foram liberados para a nova demanda` : null,
           ...current.feed
         ].filter(Boolean).slice(0, 20)
@@ -720,7 +721,8 @@ function Dashboard({ state, setState, onLogout }) {
           }
         },
         feed: [
-          `${current.user.username} ajustou o prazo da demanda`,
+          `${current.user.username} adicionou ${hours}h ao prazo da demanda`,
+          `Novo prazo de ${current.user.username}: ${nextEstimate}h no total`,
           ...current.feed
         ].slice(0, 20)
       };
