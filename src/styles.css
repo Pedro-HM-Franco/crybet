@@ -829,24 +829,6 @@ input:focus, textarea:focus, select:focus {
   font-style: normal;
   font-weight: 900;
 }
-.active-bets-panel article.own-active-bet {
-  border-color: rgba(248, 113, 113, 0.35);
-  background: rgba(248, 113, 113, 0.08);
-}
-.cancel-bet-button {
-  border: 0;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #334155, #ef4444);
-  color: white;
-  padding: 8px 10px;
-  font-size: .68rem;
-  font-weight: 950;
-  text-transform: uppercase;
-}
-.locked-bet .cancel-bet-button {
-  margin-top: 8px;
-  width: fit-content;
-}
 .secondary-section {
   opacity: .92;
 }
