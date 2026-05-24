@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 
+const BETTING_CUTOFF_RATIO = 0.8;
+const BET_CANCEL_GRACE_MINUTES = 3;
+
 const finishWindows = [
   { id: "under-1h", label: "Menos de 1h", helper: "Entrega relâmpago" },
   { id: "1-2h", label: "1h a 2h", helper: "Ritmo forte" },
@@ -45,6 +48,17 @@ function isBetForCurrentDemand(bet, startedAt) {
   return new Date(bet.createdAt).getTime() >= new Date(startedAt).getTime();
 }
 
+function isBettingOpen(stats, now) {
+  if (!stats.startedAt) return false;
+  const estimateMinutes = Math.max(1, Number(stats.estimateHours || 1) * 60);
+  return workedMinutes(stats, new Date(now).toISOString()) < estimateMinutes * BETTING_CUTOFF_RATIO;
+}
+
+function canCancelBet(bet, now) {
+  if (!bet?.createdAt) return false;
+  return now - new Date(bet.createdAt).getTime() <= BET_CANCEL_GRACE_MINUTES * 60 * 1000;
+}
+
 export function classifyFinishWindow(stats, finishedAt = new Date().toISOString()) {
   const hours = workedMinutes(stats, finishedAt) / 60;
   if (hours < 1) return "under-1h";
@@ -71,7 +85,13 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet, on
   const [amount, setAmount] = useState(5);
   const [customHours, setCustomHours] = useState(1);
   const [customMinutes, setCustomMinutes] = useState(0);
+  const [now, setNow] = useState(Date.now());
   const balance = Math.max(0, Number(user.enfecoins ?? 0));
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const targetStillExists = productiveUsers.some((item) => item.id === targetId);
@@ -103,14 +123,18 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet, on
   const customTotalMinutes = Number(customHours || 0) * 60 + Number(customMinutes || 0);
   const customId = customWindowId(customTotalMinutes);
   const customOdds = windowOdds({ windowId: customId, bets: activeBets, targetProgress: targetStats.progress ?? 0 });
-  const canBet = Boolean(targetId) && balance >= amount && amount > 0;
+  const bettingOpen = isBettingOpen(targetStats, now);
+  const canBet = Boolean(targetId) && bettingOpen && balance >= amount && amount > 0;
+  const canCancelExistingBet = existingBet ? canCancelBet(existingBet, now) : false;
   const disabledReason = !targetId
     ? "Escolha uma pessoa com demanda ativa."
-    : balance <= 0
-      ? "Você está sem ENFECOINS para acreditar agora."
-      : balance < amount
-        ? `Seu saldo é ${balance} ENFECOINS. Diminua o valor.`
-        : "";
+    : !bettingOpen
+      ? "Palpites encerrados para evitar aposta no último momento."
+      : balance <= 0
+        ? "Você está sem ENFECOINS para acreditar agora."
+        : balance < amount
+          ? `Seu saldo é ${balance} ENFECOINS. Diminua o valor.`
+          : "";
 
   const odds = useMemo(() => {
     return finishWindows.reduce((acc, item) => {
@@ -127,7 +151,7 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet, on
           <h2>Quando termina?</h2>
           <p className="helper-copy">Escolha uma pessoa e aposte em quanto tempo ela termina a demanda que está fazendo agora.</p>
         </div>
-        <span>{activeBets.length} palpites ativos</span>
+        <span>{bettingOpen ? `${activeBets.length} palpites ativos` : "Palpites encerrados"}</span>
       </div>
 
       {!productiveUsers.length ? (
@@ -188,9 +212,13 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet, on
               <strong>{existingBet.targetName}</strong>
               <p>{existingBet.windowLabel || finishWindows.find((item) => item.id === existingBet.windowId)?.label}</p>
               <em>{existingBet.amount} ENFECOINS / x{existingBet.odds}</em>
-              <button type="button" className="cancel-bet-button" onClick={() => onCancelBet(existingBet.id)}>
-                Cancelar palpite e reembolsar
-              </button>
+              {canCancelExistingBet ? (
+                <button type="button" className="cancel-bet-button" onClick={() => onCancelBet(existingBet.id)}>
+                  Cancelar palpite e reembolsar
+                </button>
+              ) : (
+                <small>Prazo de arrependimento encerrado.</small>
+              )}
             </div>
           ) : (
             <>

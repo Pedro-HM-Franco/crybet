@@ -12,6 +12,8 @@ import { clamp, emptyState, loadState, makeId, resetCrybetStorage, saveState } f
 import { backendMode, supabase } from "./lib/supabaseClient";
 
 const MIN_BONUS_RATIO = 0.25;
+const BETTING_CUTOFF_RATIO = 0.8;
+const BET_CANCEL_GRACE_MINUTES = 3;
 
 function money(value) {
   return Math.round(value ?? 0);
@@ -611,6 +613,18 @@ function Dashboard({ state, setState, onLogout }) {
     return Math.max(0, end - start - pausedTotal);
   }
 
+  function isFinishBettingOpen(stats) {
+    if (!stats?.startedAt) return false;
+    const estimateMs = Math.max(1, Number(stats.estimateHours || 1) * 60 * 60 * 1000);
+    return workedMilliseconds(stats, new Date().toISOString()) < estimateMs * BETTING_CUTOFF_RATIO;
+  }
+
+  function canCancelFinishBet(bet) {
+    if (!bet?.createdAt) return false;
+    const elapsedMs = Date.now() - new Date(bet.createdAt).getTime();
+    return elapsedMs <= BET_CANCEL_GRACE_MINUTES * 60 * 1000;
+  }
+
   function formatDuration(stats, finishedAt) {
     const totalMinutes = Math.max(0, Math.round(workedMilliseconds(stats, finishedAt) / 60000));
     const hours = Math.floor(totalMinutes / 60);
@@ -783,7 +797,7 @@ function Dashboard({ state, setState, onLogout }) {
           isBetForStartedDemand(bet, targetStats.startedAt)
       );
       const currentBalance = bettor.enfecoins ?? 0;
-      if (!target || !targetStats.startedAt || already || currentBalance < betAmount) return current;
+      if (!target || !targetStats.startedAt || !isFinishBettingOpen(targetStats) || already || currentBalance < betAmount) return current;
       const bet = {
         id: makeId("finish-bet"),
         bettorId: bettor.id,
@@ -815,7 +829,7 @@ function Dashboard({ state, setState, onLogout }) {
       const bet = (current.finishBets ?? []).find(
         (item) => item.id === betId && item.bettorId === bettor.id && item.status === "active"
       );
-      if (!bet) return current;
+      if (!bet || !canCancelFinishBet(bet)) return current;
 
       const canceledAt = new Date().toISOString();
       const refund = Number(bet.amount ?? 0);
