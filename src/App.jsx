@@ -1180,11 +1180,7 @@ export default function App() {
       applyingRemote.current = true;
       setState((current) => {
         const normalized = applyCloudState(current, cloudState);
-        const normalizedSnapshot = JSON.stringify(toCloudState(normalized));
-        if (normalizedSnapshot !== JSON.stringify(cloudState)) {
-          lastCloudSnapshot.current = normalizedSnapshot;
-          window.setTimeout(() => saveCloudState(normalized), 0);
-        }
+        lastCloudSnapshot.current = JSON.stringify(toCloudState(normalized));
         return normalized;
       });
     });
@@ -1194,11 +1190,7 @@ export default function App() {
       applyingRemote.current = true;
       setState((current) => {
         const normalized = applyCloudState(current, cloudState);
-        const normalizedSnapshot = JSON.stringify(toCloudState(normalized));
-        if (normalizedSnapshot !== JSON.stringify(cloudState)) {
-          lastCloudSnapshot.current = normalizedSnapshot;
-          window.setTimeout(() => saveCloudState(normalized), 0);
-        }
+        lastCloudSnapshot.current = JSON.stringify(toCloudState(normalized));
         return normalized;
       });
     });

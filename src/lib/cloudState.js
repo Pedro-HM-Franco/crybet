@@ -5,19 +5,6 @@ const LEGACY_ROW_ID = "main";
 const PLATFORM = "enfe-clean-v2";
 const MIN_BONUS_RATIO = 0.25;
 
-const tableNames = [
-  "enfe_app_meta",
-  "enfe_users",
-  "enfe_productivity",
-  "enfe_completed_demands",
-  "enfe_finish_bets",
-  "enfe_chat_messages",
-  "enfe_feed_events",
-  "enfe_competitions",
-  "enfe_competition_options",
-  "enfe_competition_bets"
-];
-
 export function toCloudState(state) {
   const { user, ...globalState } = state;
   return globalState;
@@ -581,33 +568,28 @@ export async function saveCloudState(state) {
 export function subscribeCloudState(onState) {
   if (!supabase) return () => {};
 
-  let timer = null;
-  const reload = () => {
-    window.clearTimeout(timer);
-    timer = window.setTimeout(async () => {
+  let stopped = false;
+  let loading = false;
+  const reload = async () => {
+    if (stopped || loading || document.hidden) return;
+    loading = true;
+    try {
       const nextState = await loadCloudState();
-      if (nextState) onState(nextState);
-    }, 350);
+      if (nextState && !stopped) onState(nextState);
+    } finally {
+      loading = false;
+    }
   };
 
-  const channels = tableNames.map((table) =>
-    supabase
-      .channel(`enfe-${table}`)
-      .on("postgres_changes", { event: "*", schema: "public", table }, reload)
-      .subscribe()
-  );
-
-  const legacyChannel = supabase
-    .channel("crybet-state")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "crybet_state", filter: `id=eq.${LEGACY_ROW_ID}` },
-      reload
-    )
-    .subscribe();
+  const interval = window.setInterval(reload, 30000);
+  const onVisible = () => {
+    if (!document.hidden) reload();
+  };
+  document.addEventListener("visibilitychange", onVisible);
 
   return () => {
-    window.clearTimeout(timer);
-    [...channels, legacyChannel].forEach((channel) => supabase.removeChannel(channel));
+    stopped = true;
+    window.clearInterval(interval);
+    document.removeEventListener("visibilitychange", onVisible);
   };
 }
