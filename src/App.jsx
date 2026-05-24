@@ -11,7 +11,7 @@ import { loadCloudState, saveCloudState, subscribeCloudState, toCloudState } fro
 import { clamp, emptyState, loadState, makeId, resetCrybetStorage, saveState } from "./lib/storage";
 import { backendMode, supabase } from "./lib/supabaseClient";
 
-const MIN_BONUS_MINUTES = 10;
+const MIN_BONUS_RATIO = 0.25;
 
 function money(value) {
   return Math.round(value ?? 0);
@@ -612,8 +612,12 @@ function Dashboard({ state, setState, onLogout }) {
     return finishedOnTime ? Math.max(5, targetTopics * 2) : 0;
   }
 
+  function minimumBonusMinutes(early) {
+    return Math.max(1, Math.ceil(early.estimateMinutes * MIN_BONUS_RATIO));
+  }
+
   function canReceiveProductionBonus(early) {
-    return early.actualMinutes >= MIN_BONUS_MINUTES;
+    return early.actualMinutes >= minimumBonusMinutes(early);
   }
 
   function isBetForStartedDemand(bet, startedAt) {
@@ -822,6 +826,7 @@ function Dashboard({ state, setState, onLogout }) {
       const winningWindow = classifyFinishWindow(stats, finishedAt);
       const durationLabel = formatDuration(stats, finishedAt);
       const early = calculateEarlyBonus(stats, finishedAt);
+      const minimumMinutes = minimumBonusMinutes(early);
       const bonusAllowed = canReceiveProductionBonus(early);
       const earlyBonus = bonusAllowed ? early.bonus : 0;
       const onTimeBonus = bonusAllowed ? calculateOnTimeBonus(stats, early) : 0;
@@ -887,7 +892,7 @@ function Dashboard({ state, setState, onLogout }) {
                 speedBonus: producerBonus,
                 onTimeBonus,
                 earlyBonus,
-                noBonusReason: bonusAllowed ? "" : `Sem bônus: demanda abaixo de ${MIN_BONUS_MINUTES} minutos.`,
+                noBonusReason: bonusAllowed ? "" : `Sem bônus: trabalhou menos de 25% do prazo marcado (${minimumMinutes} min).`,
                 finishedAtLabel: new Intl.DateTimeFormat("pt-BR", {
                   day: "2-digit",
                   month: "2-digit",
@@ -901,7 +906,7 @@ function Dashboard({ state, setState, onLogout }) {
           }
         },
         feed: [
-          bonusAllowed ? null : `${current.user.username} finalizou antes do mínimo de ${MIN_BONUS_MINUTES} minutos e não recebeu bônus`,
+          bonusAllowed ? null : `${current.user.username} finalizou antes de 25% do prazo marcado e não recebeu bônus`,
           onTimeBonus ? `${current.user.username} ganhou ${onTimeBonus} ENFECOINS por cumprir o prazo marcado` : `${current.user.username} não recebeu bônus de prazo`,
           earlyBonus ? `${current.user.username} ganhou ${earlyBonus} ENFECOINS extras por terminar antes do tempo` : null,
           `${current.user.username} finalizou a demanda em ${durationLabel}`,

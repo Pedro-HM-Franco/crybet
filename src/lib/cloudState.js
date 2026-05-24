@@ -3,7 +3,7 @@ import { supabase } from "./supabaseClient";
 
 const LEGACY_ROW_ID = "main";
 const PLATFORM = "enfe-clean-v2";
-const MIN_BONUS_MINUTES = 10;
+const MIN_BONUS_RATIO = 0.25;
 
 const tableNames = [
   "enfe_app_meta",
@@ -149,8 +149,8 @@ export async function loadCloudState() {
       finishedAtLabel: row.finished_at_label,
       durationLabel: row.duration_label,
       noBonusReason:
-        !row.speed_bonus && Number(row.actual_minutes ?? 0) < MIN_BONUS_MINUTES
-          ? `Sem bônus: demanda abaixo de ${MIN_BONUS_MINUTES} minutos.`
+        !row.speed_bonus && Number(row.actual_minutes ?? 0) < Math.ceil(Number(row.estimate_minutes ?? 0) * MIN_BONUS_RATIO)
+          ? `Sem bônus: trabalhou menos de 25% do prazo marcado (${Math.ceil(Number(row.estimate_minutes ?? 0) * MIN_BONUS_RATIO)} min).`
           : ""
     };
     const key = demandHistoryKey(item);
