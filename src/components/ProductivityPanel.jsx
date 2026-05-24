@@ -277,7 +277,7 @@ export function CompletedDemands({ user, productivity }) {
                   </small>
                 </div>
               ) : (
-                <small className="muted-note">Sem bônus: terminou depois do tempo marcado.</small>
+                <small className="muted-note">{item.noBonusReason || "Sem bônus: terminou depois do tempo marcado."}</small>
               )}
             </article>
           ))}

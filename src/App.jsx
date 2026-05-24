@@ -11,6 +11,8 @@ import { loadCloudState, saveCloudState, subscribeCloudState, toCloudState } fro
 import { clamp, emptyState, loadState, makeId, resetCrybetStorage, saveState } from "./lib/storage";
 import { backendMode, supabase } from "./lib/supabaseClient";
 
+const MIN_BONUS_MINUTES = 10;
+
 function money(value) {
   return Math.round(value ?? 0);
 }
@@ -610,6 +612,10 @@ function Dashboard({ state, setState, onLogout }) {
     return finishedOnTime ? Math.max(5, targetTopics * 2) : 0;
   }
 
+  function canReceiveProductionBonus(early) {
+    return early.actualMinutes >= MIN_BONUS_MINUTES;
+  }
+
   function isBetForStartedDemand(bet, startedAt) {
     if (!startedAt || !bet.createdAt) return false;
     return new Date(bet.createdAt).getTime() >= new Date(startedAt).getTime();
@@ -816,8 +822,10 @@ function Dashboard({ state, setState, onLogout }) {
       const winningWindow = classifyFinishWindow(stats, finishedAt);
       const durationLabel = formatDuration(stats, finishedAt);
       const early = calculateEarlyBonus(stats, finishedAt);
-      const onTimeBonus = calculateOnTimeBonus(stats, early);
-      const producerBonus = early.bonus + onTimeBonus;
+      const bonusAllowed = canReceiveProductionBonus(early);
+      const earlyBonus = bonusAllowed ? early.bonus : 0;
+      const onTimeBonus = bonusAllowed ? calculateOnTimeBonus(stats, early) : 0;
+      const producerBonus = earlyBonus + onTimeBonus;
       const finishBets = (current.finishBets ?? []).map((bet) =>
         bet.targetUserId === current.user.id && bet.status === "active" && isBetForStartedDemand(bet, stats.startedAt)
           ? { ...bet, status: "resolved", winningWindow, won: didFinishBetWin(bet, stats, finishedAt), resolvedAt: finishedAt }
@@ -878,7 +886,8 @@ function Dashboard({ state, setState, onLogout }) {
                 savedMinutes: early.savedMinutes,
                 speedBonus: producerBonus,
                 onTimeBonus,
-                earlyBonus: early.bonus,
+                earlyBonus,
+                noBonusReason: bonusAllowed ? "" : `Sem bônus: demanda abaixo de ${MIN_BONUS_MINUTES} minutos.`,
                 finishedAtLabel: new Intl.DateTimeFormat("pt-BR", {
                   day: "2-digit",
                   month: "2-digit",
@@ -892,8 +901,9 @@ function Dashboard({ state, setState, onLogout }) {
           }
         },
         feed: [
+          bonusAllowed ? null : `${current.user.username} finalizou antes do mínimo de ${MIN_BONUS_MINUTES} minutos e não recebeu bônus`,
           onTimeBonus ? `${current.user.username} ganhou ${onTimeBonus} ENFECOINS por cumprir o prazo marcado` : `${current.user.username} não recebeu bônus de prazo`,
-          early.bonus ? `${current.user.username} ganhou ${early.bonus} ENFECOINS extras por terminar antes do tempo` : null,
+          earlyBonus ? `${current.user.username} ganhou ${earlyBonus} ENFECOINS extras por terminar antes do tempo` : null,
           `${current.user.username} finalizou a demanda em ${durationLabel}`,
           `${current.user.username} concluiu ${Number(stats.targetTopics) || 1} tópicos`,
           ...winnerFeed.slice(0, 5),

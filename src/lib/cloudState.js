@@ -3,6 +3,7 @@ import { supabase } from "./supabaseClient";
 
 const LEGACY_ROW_ID = "main";
 const PLATFORM = "enfe-clean-v2";
+const MIN_BONUS_MINUTES = 10;
 
 const tableNames = [
   "enfe_app_meta",
@@ -146,7 +147,11 @@ export async function loadCloudState() {
       savedMinutes: row.saved_minutes ?? 0,
       speedBonus: row.speed_bonus ?? 0,
       finishedAtLabel: row.finished_at_label,
-      durationLabel: row.duration_label
+      durationLabel: row.duration_label,
+      noBonusReason:
+        !row.speed_bonus && Number(row.actual_minutes ?? 0) < MIN_BONUS_MINUTES
+          ? `Sem bônus: demanda abaixo de ${MIN_BONUS_MINUTES} minutos.`
+          : ""
     };
     const key = demandHistoryKey(item);
     if (!completedKeysByUser[row.user_id].has(key)) {
