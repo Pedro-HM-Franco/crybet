@@ -809,6 +809,32 @@ function Dashboard({ state, setState, onLogout }) {
     });
   }
 
+  function cancelFinishBet(betId) {
+    setState((current) => {
+      const bettor = current.users.find((user) => user.id === current.user.id) ?? current.user;
+      const bet = (current.finishBets ?? []).find(
+        (item) => item.id === betId && item.bettorId === bettor.id && item.status === "active"
+      );
+      if (!bet) return current;
+
+      const canceledAt = new Date().toISOString();
+      const refund = Number(bet.amount ?? 0);
+      const users = current.users.map((user) =>
+        user.id === bettor.id ? updateUserRecord(user, { enfecoins: (user.enfecoins ?? 0) + refund }) : user
+      );
+
+      return {
+        ...current,
+        users,
+        user: users.find((user) => user.id === bettor.id) ?? current.user,
+        finishBets: (current.finishBets ?? []).map((item) =>
+          item.id === betId ? { ...item, status: "canceled", refunded: true, canceledAt } : item
+        ),
+        feed: [`${bettor.username} cancelou um palpite e recebeu ${refund} ENFECOINS de volta`, ...current.feed].slice(0, 20)
+      };
+    });
+  }
+
   function completeDemand() {
     setState((current) => {
       const stats = current.productivity?.[current.user.id] ?? {};
@@ -1014,6 +1040,7 @@ function Dashboard({ state, setState, onLogout }) {
             productivity={productivity}
             finishBets={state.finishBets ?? []}
             onBet={placeFinishBet}
+            onCancelBet={cancelFinishBet}
           />
           <WhoBetWhat users={state.users} competitions={state.competitions} />
         </div>

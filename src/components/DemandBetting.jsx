@@ -63,7 +63,7 @@ export function didFinishBetWin(bet, stats, finishedAt) {
   return bet.windowId === classifyFinishWindow(stats, finishedAt);
 }
 
-export function DemandBetting({ user, users, productivity, finishBets, onBet }) {
+export function DemandBetting({ user, users, productivity, finishBets, onBet, onCancelBet }) {
   const productiveUsers = users.filter(
     (item) => item.id !== user.id && productivity[item.id]?.startedAt
   );
@@ -175,10 +175,15 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
             </div>
             {!activeBets.length ? <small>Ninguém acreditou nessa demanda ainda.</small> : null}
             {activeBets.map((bet) => (
-              <article key={bet.id}>
+              <article key={bet.id} className={bet.bettorId === user.id ? "own-active-bet" : ""}>
                 <strong>{bet.bettorName}</strong>
                 <span>{bet.windowLabel || bet.windowId}</span>
                 <em>{bet.amount} ENFECOINS / x{bet.odds}</em>
+                {bet.bettorId === user.id ? (
+                  <button type="button" className="cancel-bet-button" onClick={() => onCancelBet(bet.id)}>
+                    Cancelar
+                  </button>
+                ) : null}
               </article>
             ))}
           </div>
@@ -189,6 +194,9 @@ export function DemandBetting({ user, users, productivity, finishBets, onBet }) 
               <strong>{existingBet.targetName}</strong>
               <p>{existingBet.windowLabel || finishWindows.find((item) => item.id === existingBet.windowId)?.label}</p>
               <em>{existingBet.amount} ENFECOINS / x{existingBet.odds}</em>
+              <button type="button" className="cancel-bet-button" onClick={() => onCancelBet(existingBet.id)}>
+                Cancelar palpite e reembolsar
+              </button>
             </div>
           ) : (
             <>
