@@ -14,9 +14,23 @@ import { backendMode, supabase } from "./lib/supabaseClient";
 const MIN_BONUS_RATIO = 0.25;
 const BETTING_CUTOFF_RATIO = 0.8;
 const BET_CANCEL_GRACE_MINUTES = 15;
+const PRODUCER_INFLUENCE_BONUS_RATE = 0.1;
 
 function money(value) {
   return Math.round(value ?? 0);
+}
+
+function finishBetReward(bet) {
+  return Math.round(Number(bet.amount ?? 0) * Number(bet.odds ?? 1));
+}
+
+function finishBetProfit(bet) {
+  return Math.max(0, finishBetReward(bet) - Number(bet.amount ?? 0));
+}
+
+function calculateProducerInfluenceBonus(wonBets = []) {
+  const totalProfit = wonBets.reduce((sum, bet) => sum + finishBetProfit(bet), 0);
+  return Math.round(totalProfit * PRODUCER_INFLUENCE_BONUS_RATE);
 }
 
 function demandHistoryKey(item) {
@@ -923,14 +937,15 @@ function Dashboard({ state, setState, onLogout }) {
           : bet
       );
       const resolvedBets = finishBets.filter((bet) => bet.targetUserId === current.user.id && bet.resolvedAt === finishedAt);
-      const wonCount = resolvedBets.filter((bet) => bet.won).length;
-      const winnerFeed = resolvedBets
-        .filter((bet) => bet.won)
-        .map((bet) => `${bet.bettorName} ganhou ${Math.round(bet.amount * bet.odds)} ENFECOINS por acreditar em ${bet.targetName} (${bet.windowLabel || bet.windowId})`);
+      const targetWonBets = resolvedBets.filter((bet) => bet.won);
+      const wonCount = targetWonBets.length;
+      const influenceBonus = calculateProducerInfluenceBonus(targetWonBets);
+      const winnerFeed = targetWonBets
+        .map((bet) => `${bet.bettorName} ganhou ${finishBetReward(bet)} ENFECOINS por acreditar em ${bet.targetName} (${bet.windowLabel || bet.windowId})`);
       const users = current.users.map((user) => {
         const wonBets = finishBets.filter((bet) => bet.bettorId === user.id && bet.resolvedAt === finishedAt && bet.won);
-        const reward = wonBets.reduce((sum, bet) => sum + Math.round(bet.amount * bet.odds), 0);
-        const productionBonus = user.id === current.user.id ? producerBonus : 0;
+        const reward = wonBets.reduce((sum, bet) => sum + finishBetReward(bet), 0);
+        const productionBonus = user.id === current.user.id ? producerBonus + influenceBonus : 0;
         if (!reward && !productionBonus && user.id !== current.user.id) return user;
         return updateUserRecord(user, {
           enfecoins: (user.enfecoins ?? 0) + reward + productionBonus,
@@ -975,9 +990,10 @@ function Dashboard({ state, setState, onLogout }) {
                 estimateMinutes: early.estimateMinutes,
                 actualMinutes: early.actualMinutes,
                 savedMinutes: early.savedMinutes,
-                speedBonus: producerBonus,
+                speedBonus: producerBonus + influenceBonus,
                 onTimeBonus,
                 earlyBonus,
+                influenceBonus,
                 noBonusReason: bonusAllowed ? "" : `Sem bônus: trabalhou menos de 25% do prazo marcado (${minimumMinutes} min).`,
                 finishedAtLabel: new Intl.DateTimeFormat("pt-BR", {
                   day: "2-digit",
@@ -995,6 +1011,7 @@ function Dashboard({ state, setState, onLogout }) {
           bonusAllowed ? null : `${current.user.username} finalizou antes de 25% do prazo marcado e não recebeu bônus`,
           onTimeBonus ? `${current.user.username} ganhou ${onTimeBonus} ENFECOINS por cumprir o prazo marcado` : `${current.user.username} não recebeu bônus de prazo`,
           earlyBonus ? `${current.user.username} ganhou ${earlyBonus} ENFECOINS extras por terminar antes do tempo` : null,
+          influenceBonus ? `${current.user.username} ganhou ${influenceBonus} ENFECOINS de bônus porque a galera acertou os palpites` : null,
           `${current.user.username} finalizou a demanda em ${durationLabel}`,
           `${current.user.username} concluiu ${Number(stats.targetTopics) || 1} tópicos`,
           ...winnerFeed.slice(0, 5),
