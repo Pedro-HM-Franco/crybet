@@ -52,11 +52,33 @@ function mergeProductivityByUpdatedAt(localProductivity = {}, cloudProductivity 
   const merged = { ...cloudProductivity };
   Object.entries(localProductivity).forEach(([userId, localStats]) => {
     const cloudStats = cloudProductivity[userId];
-    if (!cloudStats || isAfter(localStats.updatedAt, cloudStats.updatedAt)) {
-      merged[userId] = localStats;
+    const completedHistory = mergeCompletedHistory(localStats?.completedHistory, cloudStats?.completedHistory);
+    const activeDemandKey = localStats?.startedAt
+      ? demandHistoryKey({ startedAt: localStats.startedAt, file: localStats.currentFile, task: localStats.currentTask })
+      : "";
+    const activeDemandAlreadyCompleted = activeDemandKey && completedHistory.some((item) => demandHistoryKey(item) === activeDemandKey);
+
+    if (!cloudStats || (isAfter(localStats.updatedAt, cloudStats.updatedAt) && !activeDemandAlreadyCompleted)) {
+      merged[userId] = { ...localStats, completedHistory };
+      return;
     }
+
+    merged[userId] = { ...cloudStats, completedHistory };
   });
   return merged;
+}
+
+function mergeCompletedHistory(localHistory = [], cloudHistory = []) {
+  const historyByKey = new Map();
+  [...cloudHistory, ...localHistory].forEach((item) => {
+    if (!item?.startedAt) return;
+    const key = demandHistoryKey(item);
+    const current = historyByKey.get(key);
+    if (!current || isAfter(item.finishedAt, current.finishedAt)) {
+      historyByKey.set(key, item);
+    }
+  });
+  return [...historyByKey.values()].sort((a, b) => new Date(b.finishedAt ?? 0) - new Date(a.finishedAt ?? 0));
 }
 
 function betMatchesCurrentDemand(bet, productivity) {
@@ -816,7 +838,7 @@ function Dashboard({ state, setState, onLogout }) {
               updatedAt: new Date().toISOString()
             }
           },
-          feed: [`${current.user.username} limpou uma demanda que já estava finalizada`, ...current.feed].slice(0, 20)
+          feed: [`${current.user.username} tentou finalizar uma demanda já registrada`, ...current.feed].slice(0, 20)
         };
       }
       const finishedAt = new Date().toISOString();
