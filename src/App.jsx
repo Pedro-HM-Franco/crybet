@@ -100,18 +100,37 @@ function mergeCompletedHistory(localHistory = [], cloudHistory = []) {
 function betMatchesCurrentDemand(bet, productivity) {
   const targetStartedAt = productivity?.[bet.targetUserId]?.startedAt;
   if (!targetStartedAt || !bet.createdAt) return false;
+  if (bet.targetStartedAt) {
+    return new Date(bet.targetStartedAt).getTime() === new Date(targetStartedAt).getTime();
+  }
   return new Date(bet.createdAt).getTime() >= new Date(targetStartedAt).getTime();
 }
 
 function normalizeDemandBets(state) {
   const productivity = state.productivity ?? {};
+  const canceledAt = new Date().toISOString();
+  const staleBets = (state.finishBets ?? []).filter(
+    (bet) => bet.status === "active" && !betMatchesCurrentDemand(bet, productivity)
+  );
   const finishBets = (state.finishBets ?? []).map((bet) => {
     if (bet.status !== "active") return bet;
-    const stats = productivity[bet.targetUserId] ?? {};
     if (betMatchesCurrentDemand(bet, productivity)) return bet;
-    return { ...bet, status: "expired", expiredAt: stats.startedAt ?? new Date().toISOString() };
+    return { ...bet, status: "canceled", refunded: true, canceledAt };
   });
-  return { ...state, finishBets };
+  if (!staleBets.length) return { ...state, finishBets };
+
+  const users = (state.users ?? []).map((user) => {
+    const refund = staleBets
+      .filter((bet) => bet.bettorId === user.id)
+      .reduce((sum, bet) => sum + Number(bet.amount ?? 0), 0);
+    return refund ? updateUserRecord(user, { enfecoins: (user.enfecoins ?? 0) + refund }) : user;
+  });
+  return {
+    ...state,
+    users,
+    user: users.find((user) => user.id === state.user?.id) ?? state.user,
+    finishBets
+  };
 }
 
 function applyCloudState(current, cloudState) {
@@ -588,12 +607,20 @@ function Dashboard({ state, setState, onLogout }) {
       const staleBets = (current.finishBets ?? []).filter(
         (bet) => bet.targetUserId === current.user.id && bet.status === "active"
       );
+      const refundedUsers = current.users.map((user) => {
+        const refund = staleBets
+          .filter((bet) => bet.bettorId === user.id)
+          .reduce((sum, bet) => sum + Number(bet.amount ?? 0), 0);
+        return refund ? updateUserRecord(user, { enfecoins: (user.enfecoins ?? 0) + refund }) : user;
+      });
 
       return {
         ...current,
+        users: refundedUsers,
+        user: refundedUsers.find((user) => user.id === current.user.id) ?? current.user,
         finishBets: (current.finishBets ?? []).map((bet) =>
           bet.targetUserId === current.user.id && bet.status === "active"
-            ? { ...bet, status: "expired", expiredAt: startedAt }
+            ? { ...bet, status: "canceled", refunded: true, canceledAt: startedAt }
             : bet
         ),
         productivity: {
@@ -612,7 +639,7 @@ function Dashboard({ state, setState, onLogout }) {
         feed: [
           `${current.user.username} iniciou ${draft.currentFile} com ${Number(draft.targetTopics) || 1} tópicos planejados`,
           `Prazo inicial de ${current.user.username}: ${Number(draft.estimateHours || 1)}h`,
-          staleBets.length ? `${staleBets.length} palpites antigos foram liberados para a nova demanda` : null,
+          staleBets.length ? `${staleBets.length} palpites antigos foram reembolsados para a nova demanda` : null,
           ...current.feed
         ].filter(Boolean).slice(0, 20)
       };
@@ -672,6 +699,9 @@ function Dashboard({ state, setState, onLogout }) {
 
   function isBetForStartedDemand(bet, startedAt) {
     if (!startedAt || !bet.createdAt) return false;
+    if (bet.targetStartedAt) {
+      return new Date(bet.targetStartedAt).getTime() === new Date(startedAt).getTime();
+    }
     return new Date(bet.createdAt).getTime() >= new Date(startedAt).getTime();
   }
 
