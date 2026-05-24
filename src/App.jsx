@@ -846,8 +846,28 @@ function Dashboard({ state, setState, onLogout }) {
       });
       const alreadyCompleted = (stats.completedHistory ?? []).some((item) => demandHistoryKey(item) === currentDemandKey);
       if (alreadyCompleted) {
+        const canceledAt = new Date().toISOString();
+        const stuckBets = (current.finishBets ?? []).filter(
+          (bet) =>
+            bet.targetUserId === current.user.id &&
+            bet.status === "active" &&
+            isBetForStartedDemand(bet, stats.startedAt)
+        );
+        const refundedUsers = current.users.map((user) => {
+          const refund = stuckBets
+            .filter((bet) => bet.bettorId === user.id)
+            .reduce((sum, bet) => sum + Number(bet.amount ?? 0), 0);
+          return refund ? updateUserRecord(user, { enfecoins: (user.enfecoins ?? 0) + refund }) : user;
+        });
         return {
           ...current,
+          users: refundedUsers,
+          user: refundedUsers.find((user) => user.id === current.user.id) ?? current.user,
+          finishBets: (current.finishBets ?? []).map((bet) =>
+            stuckBets.some((stuckBet) => stuckBet.id === bet.id)
+              ? { ...bet, status: "canceled", refunded: true, canceledAt }
+              : bet
+          ),
           productivity: {
             ...(current.productivity ?? {}),
             [current.user.id]: {
@@ -864,7 +884,11 @@ function Dashboard({ state, setState, onLogout }) {
               updatedAt: new Date().toISOString()
             }
           },
-          feed: [`${current.user.username} tentou finalizar uma demanda já registrada`, ...current.feed].slice(0, 20)
+          feed: [
+            `${current.user.username} tentou finalizar uma demanda já registrada`,
+            stuckBets.length ? `${stuckBets.length} palpites presos foram reembolsados` : null,
+            ...current.feed
+          ].filter(Boolean).slice(0, 20)
         };
       }
       const finishedAt = new Date().toISOString();
