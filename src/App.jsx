@@ -25,7 +25,8 @@ function completedDemandId(userId, startedAt) {
 }
 
 function updateUserRecord(user, updates = {}) {
-  return { ...user, ...updates, updatedAt: new Date().toISOString() };
+  const next = { ...user, ...updates };
+  return { ...next, rank: rankFor(next), updatedAt: new Date().toISOString() };
 }
 
 function isAfter(left, right) {
