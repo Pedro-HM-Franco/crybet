@@ -13,7 +13,7 @@ import { backendMode, supabase } from "./lib/supabaseClient";
 
 const MIN_BONUS_RATIO = 0.25;
 const BETTING_CUTOFF_RATIO = 0.8;
-const BET_CANCEL_GRACE_MINUTES = 3;
+const BET_CANCEL_GRACE_MINUTES = 15;
 
 function money(value) {
   return Math.round(value ?? 0);

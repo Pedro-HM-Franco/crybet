@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 const BETTING_CUTOFF_RATIO = 0.8;
-const BET_CANCEL_GRACE_MINUTES = 3;
+const BET_CANCEL_GRACE_MINUTES = 15;
 
 const finishWindows = [
   { id: "under-1h", label: "Menos de 1h", helper: "Entrega relâmpago" },
